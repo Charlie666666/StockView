@@ -191,7 +191,6 @@ function renderStatics() {
   $('navUS').textContent = t('navUS');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
-  $('navOpt').textContent = t('navOpt');
   $('backBtn').textContent = t('back');
   $('coreTitle').textContent = t('coreTitle');
   $('coreNote').textContent = t('coreNote');

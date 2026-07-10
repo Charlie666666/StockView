@@ -174,7 +174,6 @@ function renderStatics() {
   $('navUS').textContent = t('navUS');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
-  $('navOpt').textContent = t('navOpt');
   $('pageTitle').textContent = t('pageTitle');
   $('pageNote').textContent = t('pageNote');
   buildLangMenu();

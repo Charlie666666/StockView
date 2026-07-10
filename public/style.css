@@ -32,8 +32,8 @@ body {
 .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
 
 header { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; flex-wrap: wrap; }
-header h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 9px; }
-header h1 svg { flex-shrink: 0; }
+header h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+header h1 svg { flex-shrink: 0; width: 36px; height: 36px; }
 header .status { font-size: 13px; color: var(--text-dim); margin-left: auto; }
 header .status .dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%;
@@ -176,6 +176,32 @@ tbody tr:hover { background: var(--panel-hover); }
 .stat .s-label { font-size: 11px; color: var(--text-dim); }
 .stat .s-val { font-size: 14px; font-weight: 600; margin-top: 2px; }
 
+/* ===== 期权异动精选条（主页） ===== */
+.section-more {
+  font-size: 12px; color: var(--accent); text-decoration: none; font-weight: 500;
+}
+.section-more:hover { text-decoration: underline; }
+
+.opt-flow-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opt-card {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; text-decoration: none; color: var(--text); transition: border-color .15s;
+}
+a.opt-card:hover { border-color: var(--accent); }
+.opt-kind { font-size: 12px; font-weight: 700; min-width: 58px; }
+.opt-main { display: flex; flex-direction: column; gap: 2px; }
+.opt-sym { font-size: 17px; font-weight: 700; }
+.opt-contract { font-size: 12px; font-variant-numeric: tabular-nums; }
+.opt-stats { display: flex; gap: 18px; margin-left: auto; font-size: 12px; color: var(--text-dim); }
+.opt-stats b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 700; margin-left: 3px; }
+.opt-empty { font-size: 13px; color: var(--text-dim); }
+
+@media (max-width: 720px) {
+  .opt-flow-strip { grid-template-columns: 1fr; }
+  .opt-stats { margin-left: 0; width: 100%; }
+}
+
 /* ===== 自选分组与拖拽排序 ===== */
 .group-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
 .grp-tab {
@@ -184,6 +210,10 @@ tbody tr:hover { background: var(--panel-hover); }
 }
 .grp-tab:hover { color: var(--text); border-color: var(--accent); }
 .grp-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* 名称列左对齐（拖拽手柄使名称成为第2列，需覆盖默认右对齐） */
+.col-name { text-align: left !important; }
+.col-handle { width: 26px; }
 
 .drag-handle {
   cursor: grab; color: var(--text-dim); width: 26px; text-align: center !important;

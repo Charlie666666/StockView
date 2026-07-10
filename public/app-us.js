@@ -26,6 +26,9 @@ const I18N = {
     marketLabel: 'US', priceSuffix: '', extPctCol: 'vs Close',
     thClose: 'Close', et: 'ET',
     moreTile: 'More Sectors', moreTileSub: '35+ sectors',
+    optTitle: 'Options Flow', optMore: 'View full chain →',
+    optCall: 'Top Call', optPut: 'Top Put', optScanning: 'Scanning…',
+    optVol: 'Vol', optPrem: 'Premium', optAsOf: 'as of',
     thName: 'Name / Symbol', thPrice: 'Price', thChgPct: 'Chg %', thChg: 'Chg',
     thOpen: 'Open', thHigh: 'High', thLow: 'Low', thPrev: 'Prev Close',
     thVol: 'Volume', thAmt: 'Turnover', thTurn: 'Turnover %',
@@ -57,6 +60,9 @@ const I18N = {
     marketLabel: '美股', priceSuffix: '价', extPctCol: '较收盘',
     thClose: '收盘价', et: '美东',
     moreTile: '查看更多', moreTileSub: '35+ 板块',
+    optTitle: '期权异动', optMore: '查看完整期权链 →',
+    optCall: '看涨大单', optPut: '看跌大单', optScanning: '扫描中…',
+    optVol: '成交', optPrem: '权利金', optAsOf: '数据截至',
     thName: '名称 / 代码', thPrice: '最新价', thChgPct: '涨跌幅', thChg: '涨跌额',
     thOpen: '今开', thHigh: '最高', thLow: '最低', thPrev: '昨收',
     thVol: '成交量', thAmt: '成交额', thTurn: '换手率',
@@ -88,6 +94,9 @@ const I18N = {
     marketLabel: '美股', priceSuffix: '價', extPctCol: '較收盤',
     thClose: '收盤價', et: '美東',
     moreTile: '查看更多', moreTileSub: '35+ 板塊',
+    optTitle: '期權異動', optMore: '查看完整期權鏈 →',
+    optCall: '看漲大單', optPut: '看跌大單', optScanning: '掃描中…',
+    optVol: '成交', optPrem: '權利金', optAsOf: '數據截至',
     thName: '名稱 / 代碼', thPrice: '最新價', thChgPct: '漲跌幅', thChg: '漲跌額',
     thOpen: '今開', thHigh: '最高', thLow: '最低', thPrev: '昨收',
     thVol: '成交量', thAmt: '成交額', thTurn: '換手率',
@@ -119,6 +128,9 @@ const I18N = {
     marketLabel: '米国市場', priceSuffix: '', extPctCol: '終値比',
     thClose: '終値', et: 'ET',
     moreTile: 'もっと見る', moreTileSub: '35+ セクター',
+    optTitle: 'オプションフロー', optMore: '完全なチェーンを見る →',
+    optCall: 'コール上位', optPut: 'プット上位', optScanning: 'スキャン中…',
+    optVol: '出来高', optPrem: 'プレミアム', optAsOf: '時点',
     thName: '銘柄', thPrice: '現在値', thChgPct: '騰落率', thChg: '前日比',
     thOpen: '始値', thHigh: '高値', thLow: '安値', thPrev: '前日終値',
     thVol: '出来高', thAmt: '売買代金', thTurn: '回転率',
@@ -150,6 +162,9 @@ const I18N = {
     marketLabel: '미국 증시', priceSuffix: ' 가격', extPctCol: '종가대비',
     thClose: '종가', et: 'ET',
     moreTile: '더 보기', moreTileSub: '35+ 섹터',
+    optTitle: '옵션 플로우', optMore: '전체 체인 보기 →',
+    optCall: '콜 상위', optPut: '풋 상위', optScanning: '스캔 중…',
+    optVol: '거래량', optPrem: '프리미엄', optAsOf: '기준',
     thName: '종목', thPrice: '현재가', thChgPct: '등락률', thChg: '등락폭',
     thOpen: '시가', thHigh: '고가', thLow: '저가', thPrev: '전일종가',
     thVol: '거래량', thAmt: '거래대금', thTurn: '회전율',
@@ -425,11 +440,13 @@ function renderStatics() {
   $('navUS').textContent = t('navUS');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
-  $('navOpt').textContent = t('navOpt');
   $('idxTitle').textContent = t('indices');
   $('idxNote').textContent = t('indicesNote');
   $('hmTitle').textContent = t('sectors');
   $('hmNote').textContent = t('sectorsNote');
+  $('optTitle').textContent = t('optTitle');
+  $('optMore').textContent = t('optMore');
+  renderOptFlow();
   $('wlTitle').textContent = t('watchlist');
   $('addBtn').textContent = t('add');
   $('codeInput').placeholder = t('placeholder');
@@ -485,6 +502,81 @@ function renderHeatmap(map, sess) {
   $('heatmap').innerHTML = tiles.join('');
 }
 
+/* ---------- 期权异动精选（成交最大的一条看涨 + 一条看跌） ---------- */
+let optFlow = null;
+let optFlowFetchedAt = 0;
+
+function fmtPrem(v) {
+  if (v == null) return '--';
+  const u = CJK_UNITS[lang];
+  if (!u) {
+    if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+    if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+    return '$' + (v / 1e3).toFixed(0) + 'K';
+  }
+  if (v >= 1e8) return '$' + (v / 1e8).toFixed(2) + u[0];
+  return '$' + (v / 1e4).toFixed(0) + u[1];
+}
+
+function optAsOfString(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  const p = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(d);
+  const g = (k) => (p.find(x => x.type === k) || {}).value;
+  const date = (lang === 'zh' || lang === 'tw')
+    ? `${g('year')}年${parseInt(g('month'),10)}月${parseInt(g('day'),10)}日`
+    : `${g('year')}-${g('month')}-${g('day')}`;
+  return `${t('optAsOf')} ${date} ${g('hour')}:${g('minute')} ${t('et')}`;
+}
+
+function optCard(item, kind) {
+  const isCall = kind === 'C';
+  const c = isCall ? 'up' : 'down';
+  const label = isCall ? t('optCall') : t('optPut');
+  if (!item) {
+    return `<div class="opt-card"><div class="opt-kind ${c}">${label}</div>
+      <div class="opt-empty">${t('optScanning')}</div></div>`;
+  }
+  const dir = isCall ? 'C' : 'P';
+  return `<a class="opt-card" href="/options">
+    <div class="opt-kind ${c}">${label}</div>
+    <div class="opt-main">
+      <span class="opt-sym">${item.symbol}</span>
+      <span class="opt-contract ${c}">${fmtNum(item.strike, item.strike % 1 ? 2 : 0)}${dir} · ${item.expiry}</span>
+    </div>
+    <div class="opt-stats">
+      <span>${t('optVol')} <b>${(item.volume).toLocaleString(LOCALES[lang])}</b></span>
+      <span>${t('optPrem')} <b class="${c}">${fmtPrem(item.premium)}</b></span>
+    </div>
+  </a>`;
+}
+
+function renderOptFlow() {
+  const strip = $('optFlowStrip');
+  if (!strip) return;
+  const items = optFlow?.items || [];
+  const topCall = items.filter(x => x.type === 'C').sort((a, b) => b.premium - a.premium)[0];
+  const topPut = items.filter(x => x.type === 'P').sort((a, b) => b.premium - a.premium)[0];
+  strip.innerHTML = optCard(topCall, 'C') + optCard(topPut, 'P');
+  $('optMore').textContent = t('optMore') +
+    (optFlow?.time ? '  ·  ' + optAsOfString(optFlow.time) : '');
+}
+
+async function refreshOptFlow() {
+  // 后台每10分钟扫一次，前端每2分钟拉一次缓存即可
+  if (Date.now() - optFlowFetchedAt < 120000 && optFlow) return;
+  try {
+    const resp = await fetch('/api/options-flow');
+    if (!resp.ok) return;
+    optFlow = await resp.json();
+    optFlowFetchedAt = Date.now();
+    renderOptFlow();
+  } catch (e) { /* 保持上次数据 */ }
+}
+
 function renderWatch(map, sess) {
   const showExt = sess !== 'regular';               // 开盘后隐藏非常规时段列
   // 列名按数据的真实时段标注（数据源只有盘前/盘后；夜盘和休市时展示的是最近盘后数据）
@@ -496,8 +588,8 @@ function renderWatch(map, sess) {
     ((sess === 'overnight' || sess === 'closed') ? ' · ' + t('extNote') : '');
 
   const extHead = showExt ? `<th>${extLabel}</th><th>${t('extPctCol')}</th>` : '';
-  $('thead').innerHTML = `<tr><th></th>
-    <th>${t('thName')}</th><th>${showExt ? t('thClose') : t('thPrice')}</th>
+  $('thead').innerHTML = `<tr><th class="col-handle"></th>
+    <th class="col-name">${t('thName')}</th><th>${showExt ? t('thClose') : t('thPrice')}</th>
     <th>${t('thChgPct')}</th><th>${t('thChg')}</th>${extHead}
     <th>${t('thOpen')}</th><th>${t('thHigh')}</th><th>${t('thLow')}</th><th>${t('thPrev')}</th>
     <th>${t('thVol')}</th><th>${t('thAmt')}</th><th>${t('thTurn')}</th><th></th></tr>`;
@@ -535,7 +627,7 @@ function renderWatch(map, sess) {
     const grpBadge = `<span class="grp-badge ${groups[code] ? '' : 'ghost'}"
       onclick="promptGroup('${code}')">${groups[code] || t('groupAdd')}</span>`;
     return `<tr class="${flash}" draggable="true" data-code="${code}">${handle}
-      <td><div class="stock-name">${dispName(q)}</div>
+      <td class="col-name"><div class="stock-name">${dispName(q)}</div>
           <div class="stock-code">${sym(q.code)} · USD ${grpBadge}</div></td>
       <td class="price ${c}">${fmtNum(q.price)}</td>
       <td><span class="chg-badge ${c}">${sign(q.changePercent)}${fmtNum(q.changePercent)}%</span></td>
@@ -685,6 +777,7 @@ async function refresh() {
       renderIndices(map);
       renderHeatmap(map, sess);
       if (!dragging) renderWatch(map, sess);
+      refreshOptFlow();   // 独立节流，不阻塞行情刷新
     } else {
       const ix = INDICES.find(i => i.key === view);
       const codes = [ix.code, ...CONSTITUENTS[view].map(tk => 'us' + tk)];
