@@ -12,9 +12,10 @@ StockView provides real-time market data, watchlist management, sector views, op
 
 StockView supports multiple equity markets:
 
-* **A-shares** — Shanghai, Shenzhen, and Beijing exchanges
-* **Hong Kong stocks**
 * **U.S. stocks**
+* **Hong Kong stocks**
+* **A-shares** — Shanghai, Shenzhen, and Beijing exchanges
+
 
 The backend normalizes stock symbols across different markets and converts market-specific quote formats into a consistent internal structure.
 
