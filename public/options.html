@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Flow · StockView</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23111820'/%3E%3Cpath d='M6 24 C12 14, 36 14, 42 24 C36 34, 12 34, 6 24 Z' fill='none' stroke='%234a9eff' stroke-width='3.4'/%3E%3Crect x='21' y='16.5' width='6' height='15' rx='2' fill='%231fbf75'/%3E%3Cline x1='24' y1='11.5' x2='24' y2='36.5' stroke='%231fbf75' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="us-theme">
+<div class="container">
+  <header>
+    <h1><svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#111820"/><path d="M6 24 C12 14, 36 14, 42 24 C36 34, 12 34, 6 24 Z" fill="none" stroke="#4a9eff" stroke-width="3"/><rect x="21.4" y="16.5" width="5.2" height="15" rx="1.8" fill="#1fbf75"/><line x1="24" y1="12" x2="24" y2="36" stroke="#1fbf75" stroke-width="2.2" stroke-linecap="round"/></svg> StockView</h1>
+    <span class="session-pill" id="sessionPill"></span>
+    <nav class="tabs">
+      <a href="/us" id="navUS">美股</a>
+      <a href="/hk" id="navHK">港股</a>
+      <a href="/a" id="navA">A股</a>
+      <a href="/options" class="active" id="navOpt">期权异动</a>
+    </nav>
+    <div class="lang-menu">
+      <button class="lang-btn" id="langBtn" title="Language">🌐</button>
+      <div class="lang-dropdown hidden" id="langMenu"></div>
+    </div>
+    <span class="auth-box" id="authBox"></span>
+    <span class="status"><span class="dot" id="statusDot"></span><span id="statusText">…</span></span>
+  </header>
+
+  <div class="section-title"><span id="pageTitle"></span><span class="section-note" id="updatedNote"></span></div>
+
+  <div class="group-tabs" id="typeTabs"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none"></div>
+  </div>
+
+  <p class="hint" id="pageNote" style="margin-top:14px"></p>
+</div>
+
+<script src="/auth.js"></script>
+<script src="/app-options.js"></script>
+</body>
+</html>

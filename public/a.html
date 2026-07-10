@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A股行情 · 股票分析</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23111820'/%3E%3Cpath d='M6 24 C12 14, 36 14, 42 24 C36 34, 12 34, 6 24 Z' fill='none' stroke='%234a9eff' stroke-width='3.4'/%3E%3Crect x='21' y='16.5' width='6' height='15' rx='2' fill='%231fbf75'/%3E%3Cline x1='24' y1='11.5' x2='24' y2='36.5' stroke='%231fbf75' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><svg width="28" height="28" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="11" fill="#111820"/><path d="M6 24 C12 14, 36 14, 42 24 C36 34, 12 34, 6 24 Z" fill="none" stroke="#4a9eff" stroke-width="3"/><rect x="21.4" y="16.5" width="5.2" height="15" rx="1.8" fill="#1fbf75"/><line x1="24" y1="12" x2="24" y2="36" stroke="#1fbf75" stroke-width="2.2" stroke-linecap="round"/></svg> StockView</h1>
+    <nav class="tabs">
+      <a href="/us">美股</a>
+      <a href="/hk">港股</a>
+      <a href="/a" class="active">A股</a>
+    </nav>
+    <span class="auth-box" id="authBox"></span>
+    <span class="status"><span class="dot" id="statusDot"></span><span id="statusText">加载中…</span></span>
+  </header>
+
+  <div class="toolbar">
+    <input id="codeInput" onkeydown="if(event.key==='Enter')addStock()">
+    <button onclick="addStock()">＋ 添加自选</button>
+  </div>
+  <p class="hint">A股六位代码：沪市 6/9 开头，深市 0/2/3 开头，北交所 4/8 开头 · 每 5 秒自动刷新 · 红涨绿跌</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>名称 / 代码</th><th>最新价</th><th>涨跌幅</th><th>涨跌额</th>
+          <th>今开</th><th>最高</th><th>最低</th><th>昨收</th>
+          <th>成交量</th><th>成交额</th><th>换手率</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none">暂无自选股，在上方输入代码添加</div>
+  </div>
+</div>
+
+<script>
+window.MARKET = {
+  key: 'a',
+  name: 'A股',
+  prefixes: ['sh', 'sz', 'bj'],
+  placeholder: '输入A股代码添加自选，如 600519 / 000001',
+  defaults: ['sh600519', 'sz000001', 'sh601318', 'sz300750', 'sh600036'],
+};
+</script>
+<script src="/auth.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
