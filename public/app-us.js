@@ -11,7 +11,7 @@ const LANGS = [
 const I18N = {
   en: {
     docTitle: 'US Markets · StockView',
-    navUS: 'US', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow',
+    navUS: 'US', navKR: 'KR', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow',
     groupAll: 'All', groupAdd: '+ group',
     groupPrompt: (ex) => `Group name for this stock (existing: ${ex}). Leave empty to remove.`,
     loading: 'Loading…', updated: 'Updated', failed: 'Refresh failed, retrying',
@@ -26,9 +26,13 @@ const I18N = {
     marketLabel: 'US', priceSuffix: '', extPctCol: 'vs Close',
     thClose: 'Close', et: 'ET',
     moreTile: 'More Sectors', moreTileSub: '35+ sectors',
+    p_m1: '1m', p_m5: '5m', p_m15: '15m', p_d: '1D', p_w: '1W', p_mo: '1M', p_y: '1Y',
+    chartNote: 'Data: Yahoo Finance (may be delayed) · Scroll to zoom · Drag to pan · Hover for values',
+    chartErr: 'Failed to load chart data',
     optTitle: 'Options Flow', optMore: 'View full chain →',
     optCall: 'Top Call', optPut: 'Top Put', optScanning: 'Scanning…',
     optVol: 'Vol', optPrem: 'Premium', optAsOf: 'as of',
+    redditTitle: 'Reddit Buzz · Top 5', redditSub: 'Most-mentioned tickers (24h) · via ApeWisdom', redditMentions: 'mentions',
     thName: 'Name / Symbol', thPrice: 'Price', thChgPct: 'Chg %', thChg: 'Chg',
     thOpen: 'Open', thHigh: 'High', thLow: 'Low', thPrev: 'Prev Close',
     thVol: 'Volume', thAmt: 'Turnover', thTurn: 'Turnover %',
@@ -42,10 +46,41 @@ const I18N = {
     notFound: 'Symbol not found: ', exists: 'Already in watchlist',
     wrongMarket: 'is not a US-listed symbol. Please use the matching market page.',
     netErr: 'Request failed. Check your network.',
+    ana: {
+      title: 'Stock Analysis', loading: 'Analyzing…', err: 'Analysis unavailable',
+      score: 'Composite Score', basis: 'Quant signals from daily bars, options chain & short interest',
+      v: { strong_bull: 'Strongly Bullish', bull: 'Short-term Bullish', neutral: 'Neutral / Choppy', bear: 'Short-term Bearish', strong_bear: 'Strongly Bearish' },
+      sig: {
+        macd_golden: 'MACD Golden Cross', macd_death: 'MACD Death Cross',
+        macd_hist_up: 'MACD Hist Rising', macd_hist_down: 'MACD Hist Falling',
+        ma_bull: 'Bullish MA Stack', ma_bear: 'Bearish MA Stack', ma_mixed: 'MAs Entangled',
+        px_above_ma20: 'Above MA20', px_below_ma20: 'Below MA20',
+        rsi_overbought: 'RSI Overbought', rsi_oversold: 'RSI Oversold', rsi_bullzone: 'RSI Bull Zone', rsi_bearzone: 'RSI Bear Zone',
+        kdj_golden: 'KDJ Golden Cross', kdj_death: 'KDJ Death Cross', kdj_bull: 'KDJ Bullish', kdj_bear: 'KDJ Bearish',
+        kdj_j_hot: 'J Overheated', kdj_j_cold: 'J Oversold',
+        boll_break_up: 'Above Upper Band', boll_break_down: 'Below Lower Band',
+        vol_surge_up: 'Volume Surge Up', vol_surge_down: 'Volume Surge Down',
+        mom_strong: 'Strong 5d Momentum', mom_weak: 'Weak 5d Momentum',
+      },
+      volRatio: 'Vol Ratio', mom5: '5d Chg', mom20: '20d Chg', support: 'Support', resistance: 'Resist',
+      optTitle: 'Options Data', pcrVol: 'P/C (Vol)', pcrOi: 'P/C (OI)', maxPain: 'Max Pain', atmIv: 'ATM IV', nearExp: 'Near Expiry',
+      optSent: { bullish: 'Options flow leans bullish', bearish: 'Options flow leans bearish', balanced: 'Options flow balanced' },
+      unusual: 'Unusual Options Today', noUnusual: 'No unusual options today', optNa: 'Options data unavailable',
+      shTitle: 'Short Interest', shRatio: 'Days to Cover', shShares: 'Shares Short', shPct: '% of Float',
+      socTitle: 'Retail Attention', socSub: 'Reddit mentions (24h) · via ApeWisdom',
+      socMentions: 'Reddit Mentions', socRank: 'Reddit Rank', socTrend: 'vs 24h ago', socUpvotes: 'Upvotes',
+      socNotInTop: 'Low retail chatter — not in Reddit top 100',
+      sentLabel: { bull: 'Retail leaning bullish', bear: 'Retail leaning bearish', mixed: 'Retail views mixed' },
+      sentReason: { opt_bull: 'call-heavy options', opt_bear: 'put-heavy hedging', px_up: 'rising price', px_down: 'falling price', buzz: 'surging mentions' },
+      sentBasis: 'heuristic from mention trend, options positioning & momentum',
+      newsTitle: 'Recent News', newsSub: 'Past 48h · ET', newsNone: 'No major news in the past 48h',
+      agoMin: (n) => `${n}m ago`, agoHr: (n) => `${n}h ago`, agoDay: (n) => `${n}d ago`,
+      note: 'Quant signals from daily technicals, options chain and short interest. For reference only — not investment advice.',
+    },
   },
   zh: {
     docTitle: '美股行情 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期权异动',
+    navUS: '美股', navKR: '韩股', navHK: '港股', navA: 'A股', navOpt: '期权异动',
     groupAll: '全部', groupAdd: '＋分组',
     groupPrompt: (ex) => `输入分组名（已有分组：${ex}），留空则取消分组`,
     loading: '加载中…', updated: '已更新', failed: '刷新失败，将自动重试',
@@ -60,9 +95,13 @@ const I18N = {
     marketLabel: '美股', priceSuffix: '价', extPctCol: '较收盘',
     thClose: '收盘价', et: '美东',
     moreTile: '查看更多', moreTileSub: '35+ 板块',
+    p_m1: '1分', p_m5: '5分', p_m15: '15分', p_d: '日K', p_w: '周K', p_mo: '月K', p_y: '年K',
+    chartNote: '数据来源 Yahoo Finance（可能有延迟） · 滚轮缩放 · 拖动平移 · 悬停查看数值',
+    chartErr: 'K线数据加载失败',
     optTitle: '期权异动', optMore: '查看完整期权链 →',
     optCall: '看涨大单', optPut: '看跌大单', optScanning: '扫描中…',
     optVol: '成交', optPrem: '权利金', optAsOf: '数据截至',
+    redditTitle: 'Reddit 散户讨论榜 · Top 5', redditSub: '24小时提及最多的股票 · 数据 ApeWisdom', redditMentions: '次提及',
     thName: '名称 / 代码', thPrice: '最新价', thChgPct: '涨跌幅', thChg: '涨跌额',
     thOpen: '今开', thHigh: '最高', thLow: '最低', thPrev: '昨收',
     thVol: '成交量', thAmt: '成交额', thTurn: '换手率',
@@ -76,10 +115,41 @@ const I18N = {
     notFound: '未找到该股票：', exists: '已在自选列表中',
     wrongMarket: '不属于美股，请切换到对应市场页面添加',
     netErr: '查询失败，请检查网络',
+    ana: {
+      title: '个股分析', loading: '分析中…', err: '分析数据加载失败',
+      score: '综合评分', basis: '基于日K技术指标、期权链与做空数据',
+      v: { strong_bull: '强烈偏多', bull: '短期偏多', neutral: '中性震荡', bear: '短期偏空', strong_bear: '强烈偏空' },
+      sig: {
+        macd_golden: 'MACD金叉', macd_death: 'MACD死叉',
+        macd_hist_up: '动能柱走强', macd_hist_down: '动能柱走弱',
+        ma_bull: '均线多头排列', ma_bear: '均线空头排列', ma_mixed: '均线交织',
+        px_above_ma20: '站上MA20', px_below_ma20: '跌破MA20',
+        rsi_overbought: 'RSI超买', rsi_oversold: 'RSI超卖', rsi_bullzone: 'RSI强势区', rsi_bearzone: 'RSI弱势区',
+        kdj_golden: 'KDJ金叉', kdj_death: 'KDJ死叉', kdj_bull: 'KDJ多头', kdj_bear: 'KDJ空头',
+        kdj_j_hot: 'J值过热', kdj_j_cold: 'J值超冷',
+        boll_break_up: '突破布林上轨', boll_break_down: '跌破布林下轨',
+        vol_surge_up: '放量上涨', vol_surge_down: '放量下跌',
+        mom_strong: '5日动量强劲', mom_weak: '5日动量疲弱',
+      },
+      volRatio: '量比', mom5: '5日涨幅', mom20: '20日涨幅', support: '支撑', resistance: '压力',
+      optTitle: '期权数据', pcrVol: 'P/C比(量)', pcrOi: 'P/C比(持仓)', maxPain: '最大痛点', atmIv: 'ATM隐波', nearExp: '近月到期',
+      optSent: { bullish: '期权情绪偏多', bearish: '期权情绪偏空', balanced: '期权多空均衡' },
+      unusual: '今日期权异动大单', noUnusual: '今日无异动大单', optNa: '期权数据暂不可用',
+      shTitle: '做空数据', shRatio: '回补天数', shShares: '做空股数', shPct: '占流通盘',
+      socTitle: '散户热度', socSub: 'Reddit 24小时提及量 · 数据 ApeWisdom',
+      socMentions: 'Reddit 提及', socRank: 'Reddit 排名', socTrend: '较24h前', socUpvotes: '获赞',
+      socNotInTop: '散户讨论较少 — 未进 Reddit 热度前100',
+      sentLabel: { bull: '散户偏多', bear: '散户偏空', mixed: '多空分歧' },
+      sentReason: { opt_bull: '期权偏买Call', opt_bear: '期权偏买Put避险', px_up: '价格走高', px_down: '价格走低', buzz: '提及量激增' },
+      sentBasis: '综合提及趋势、期权持仓与价格动量的启发式判断',
+      newsTitle: '近期新闻', newsSub: '近48小时 · 美东时间', newsNone: '近48小时无重点新闻',
+      agoMin: (n) => `${n}分钟前`, agoHr: (n) => `${n}小时前`, agoDay: (n) => `${n}天前`,
+      note: '基于日K线技术指标、期权链与做空数据的量化信号，仅供参考，不构成投资建议',
+    },
   },
   tw: {
     docTitle: '美股行情 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期權異動',
+    navUS: '美股', navKR: '韓股', navHK: '港股', navA: 'A股', navOpt: '期權異動',
     groupAll: '全部', groupAdd: '＋分組',
     groupPrompt: (ex) => `輸入分組名（既有分組：${ex}），留空則取消分組`,
     loading: '載入中…', updated: '已更新', failed: '刷新失敗，將自動重試',
@@ -94,9 +164,13 @@ const I18N = {
     marketLabel: '美股', priceSuffix: '價', extPctCol: '較收盤',
     thClose: '收盤價', et: '美東',
     moreTile: '查看更多', moreTileSub: '35+ 板塊',
+    p_m1: '1分', p_m5: '5分', p_m15: '15分', p_d: '日K', p_w: '週K', p_mo: '月K', p_y: '年K',
+    chartNote: '數據來源 Yahoo Finance（可能有延遲） · 滾輪縮放 · 拖動平移 · 懸停查看數值',
+    chartErr: 'K線數據載入失敗',
     optTitle: '期權異動', optMore: '查看完整期權鏈 →',
     optCall: '看漲大單', optPut: '看跌大單', optScanning: '掃描中…',
     optVol: '成交', optPrem: '權利金', optAsOf: '數據截至',
+    redditTitle: 'Reddit 散戶討論榜 · Top 5', redditSub: '24小時提及最多的股票 · 數據 ApeWisdom', redditMentions: '次提及',
     thName: '名稱 / 代碼', thPrice: '最新價', thChgPct: '漲跌幅', thChg: '漲跌額',
     thOpen: '今開', thHigh: '最高', thLow: '最低', thPrev: '昨收',
     thVol: '成交量', thAmt: '成交額', thTurn: '換手率',
@@ -110,10 +184,41 @@ const I18N = {
     notFound: '未找到該股票：', exists: '已在自選清單中',
     wrongMarket: '不屬於美股，請切換到對應市場頁面加入',
     netErr: '查詢失敗，請檢查網路',
+    ana: {
+      title: '個股分析', loading: '分析中…', err: '分析數據載入失敗',
+      score: '綜合評分', basis: '基於日K技術指標、期權鏈與做空數據',
+      v: { strong_bull: '強烈偏多', bull: '短期偏多', neutral: '中性震盪', bear: '短期偏空', strong_bear: '強烈偏空' },
+      sig: {
+        macd_golden: 'MACD金叉', macd_death: 'MACD死叉',
+        macd_hist_up: '動能柱走強', macd_hist_down: '動能柱走弱',
+        ma_bull: '均線多頭排列', ma_bear: '均線空頭排列', ma_mixed: '均線交織',
+        px_above_ma20: '站上MA20', px_below_ma20: '跌破MA20',
+        rsi_overbought: 'RSI超買', rsi_oversold: 'RSI超賣', rsi_bullzone: 'RSI強勢區', rsi_bearzone: 'RSI弱勢區',
+        kdj_golden: 'KDJ金叉', kdj_death: 'KDJ死叉', kdj_bull: 'KDJ多頭', kdj_bear: 'KDJ空頭',
+        kdj_j_hot: 'J值過熱', kdj_j_cold: 'J值超冷',
+        boll_break_up: '突破布林上軌', boll_break_down: '跌破布林下軌',
+        vol_surge_up: '放量上漲', vol_surge_down: '放量下跌',
+        mom_strong: '5日動量強勁', mom_weak: '5日動量疲弱',
+      },
+      volRatio: '量比', mom5: '5日漲幅', mom20: '20日漲幅', support: '支撐', resistance: '壓力',
+      optTitle: '期權數據', pcrVol: 'P/C比(量)', pcrOi: 'P/C比(持倉)', maxPain: '最大痛點', atmIv: 'ATM隱波', nearExp: '近月到期',
+      optSent: { bullish: '期權情緒偏多', bearish: '期權情緒偏空', balanced: '期權多空均衡' },
+      unusual: '今日期權異動大單', noUnusual: '今日無異動大單', optNa: '期權數據暫不可用',
+      shTitle: '做空數據', shRatio: '回補天數', shShares: '做空股數', shPct: '佔流通盤',
+      socTitle: '散戶熱度', socSub: 'Reddit 24小時提及量 · 數據 ApeWisdom',
+      socMentions: 'Reddit 提及', socRank: 'Reddit 排名', socTrend: '較24h前', socUpvotes: '獲讚',
+      socNotInTop: '散戶討論較少 — 未進 Reddit 熱度前100',
+      sentLabel: { bull: '散戶偏多', bear: '散戶偏空', mixed: '多空分歧' },
+      sentReason: { opt_bull: '期權偏買Call', opt_bear: '期權偏買Put避險', px_up: '價格走高', px_down: '價格走低', buzz: '提及量激增' },
+      sentBasis: '綜合提及趨勢、期權持倉與價格動量的啟發式判斷',
+      newsTitle: '近期新聞', newsSub: '近48小時 · 美東時間', newsNone: '近48小時無重點新聞',
+      agoMin: (n) => `${n}分鐘前`, agoHr: (n) => `${n}小時前`, agoDay: (n) => `${n}天前`,
+      note: '基於日K線技術指標、期權鏈與做空數據的量化信號，僅供參考，不構成投資建議',
+    },
   },
   ja: {
     docTitle: '米国株マーケット · StockView',
-    navUS: '米国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー',
+    navUS: '米国株', navKR: '韓国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー',
     groupAll: 'すべて', groupAdd: '＋グループ',
     groupPrompt: (ex) => `グループ名を入力（既存: ${ex}）。空欄でグループ解除`,
     loading: '読み込み中…', updated: '更新', failed: '更新に失敗しました。再試行します',
@@ -128,9 +233,13 @@ const I18N = {
     marketLabel: '米国市場', priceSuffix: '', extPctCol: '終値比',
     thClose: '終値', et: 'ET',
     moreTile: 'もっと見る', moreTileSub: '35+ セクター',
+    p_m1: '1分', p_m5: '5分', p_m15: '15分', p_d: '日足', p_w: '週足', p_mo: '月足', p_y: '年足',
+    chartNote: 'データ: Yahoo Finance（遅延の可能性あり） · ホイールでズーム · ドラッグで移動 · ホバーで数値表示',
+    chartErr: 'チャートデータの読み込みに失敗しました',
     optTitle: 'オプションフロー', optMore: '完全なチェーンを見る →',
     optCall: 'コール上位', optPut: 'プット上位', optScanning: 'スキャン中…',
     optVol: '出来高', optPrem: 'プレミアム', optAsOf: '時点',
+    redditTitle: 'Reddit 話題ランキング · Top 5', redditSub: '24時間で最も言及された銘柄 · ApeWisdom', redditMentions: '件言及',
     thName: '銘柄', thPrice: '現在値', thChgPct: '騰落率', thChg: '前日比',
     thOpen: '始値', thHigh: '高値', thLow: '安値', thPrev: '前日終値',
     thVol: '出来高', thAmt: '売買代金', thTurn: '回転率',
@@ -144,10 +253,41 @@ const I18N = {
     notFound: '銘柄が見つかりません: ', exists: '既にウォッチリストにあります',
     wrongMarket: 'は米国上場銘柄ではありません。対応する市場ページをご利用ください',
     netErr: 'リクエストに失敗しました。ネットワークをご確認ください',
+    ana: {
+      title: '銘柄分析', loading: '分析中…', err: '分析データの取得に失敗しました',
+      score: '総合スコア', basis: '日足テクニカル・オプションチェーン・空売りデータに基づく',
+      v: { strong_bull: '強い買い優勢', bull: '短期買い優勢', neutral: '中立・レンジ', bear: '短期売り優勢', strong_bear: '強い売り優勢' },
+      sig: {
+        macd_golden: 'MACDゴールデンクロス', macd_death: 'MACDデッドクロス',
+        macd_hist_up: 'ヒストグラム上昇', macd_hist_down: 'ヒストグラム下降',
+        ma_bull: 'MA強気配列', ma_bear: 'MA弱気配列', ma_mixed: 'MA交錯',
+        px_above_ma20: 'MA20上抜け', px_below_ma20: 'MA20下抜け',
+        rsi_overbought: 'RSI買われすぎ', rsi_oversold: 'RSI売られすぎ', rsi_bullzone: 'RSI強気圏', rsi_bearzone: 'RSI弱気圏',
+        kdj_golden: 'KDJゴールデンクロス', kdj_death: 'KDJデッドクロス', kdj_bull: 'KDJ強気', kdj_bear: 'KDJ弱気',
+        kdj_j_hot: 'J値過熱', kdj_j_cold: 'J値超冷',
+        boll_break_up: 'ボリンジャー上限突破', boll_break_down: 'ボリンジャー下限割れ',
+        vol_surge_up: '出来高急増(上昇)', vol_surge_down: '出来高急増(下落)',
+        mom_strong: '5日モメンタム強', mom_weak: '5日モメンタム弱',
+      },
+      volRatio: '出来高比', mom5: '5日騰落', mom20: '20日騰落', support: 'サポート', resistance: 'レジスタンス',
+      optTitle: 'オプションデータ', pcrVol: 'P/C(出来高)', pcrOi: 'P/C(建玉)', maxPain: 'マックスペイン', atmIv: 'ATM IV', nearExp: '直近限月',
+      optSent: { bullish: 'オプションは強気寄り', bearish: 'オプションは弱気寄り', balanced: 'オプションは中立' },
+      unusual: '本日の異常フロー', noUnusual: '本日は異常フローなし', optNa: 'オプションデータ利用不可',
+      shTitle: '空売りデータ', shRatio: '買い戻し日数', shShares: '空売り株数', shPct: '浮動株比率',
+      socTitle: '個人投資家の注目度', socSub: 'Reddit 24時間の言及数 · ApeWisdom',
+      socMentions: 'Reddit 言及数', socRank: 'Reddit ランク', socTrend: '24時間前比', socUpvotes: '高評価',
+      socNotInTop: '個人の話題は少なめ — Reddit トップ100外',
+      sentLabel: { bull: '個人は強気寄り', bear: '個人は弱気寄り', mixed: '個人は方向感なし' },
+      sentReason: { opt_bull: 'コール偏重', opt_bear: 'プット偏重ヘッジ', px_up: '価格上昇', px_down: '価格下落', buzz: '言及急増' },
+      sentBasis: '言及トレンド・オプション建玉・モメンタムからの推定',
+      newsTitle: '最近のニュース', newsSub: '過去48時間 · 米国東部時間', newsNone: '過去48時間に主要ニュースなし',
+      agoMin: (n) => `${n}分前`, agoHr: (n) => `${n}時間前`, agoDay: (n) => `${n}日前`,
+      note: '日足テクニカル・オプションチェーン・空売りデータに基づく定量シグナルです。参考情報であり投資助言ではありません。',
+    },
   },
   ko: {
     docTitle: '미국 증시 · StockView',
-    navUS: '미국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우',
+    navUS: '미국', navKR: '한국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우',
     groupAll: '전체', groupAdd: '＋그룹',
     groupPrompt: (ex) => `그룹 이름 입력 (기존: ${ex}). 비워두면 그룹 해제`,
     loading: '로딩 중…', updated: '업데이트', failed: '새로고침 실패, 재시도 중',
@@ -162,9 +302,13 @@ const I18N = {
     marketLabel: '미국 증시', priceSuffix: ' 가격', extPctCol: '종가대비',
     thClose: '종가', et: 'ET',
     moreTile: '더 보기', moreTileSub: '35+ 섹터',
+    p_m1: '1분', p_m5: '5분', p_m15: '15분', p_d: '일봉', p_w: '주봉', p_mo: '월봉', p_y: '연봉',
+    chartNote: '데이터: Yahoo Finance (지연 가능) · 휠 확대/축소 · 드래그 이동 · 호버로 수치 확인',
+    chartErr: '차트 데이터 로드 실패',
     optTitle: '옵션 플로우', optMore: '전체 체인 보기 →',
     optCall: '콜 상위', optPut: '풋 상위', optScanning: '스캔 중…',
     optVol: '거래량', optPrem: '프리미엄', optAsOf: '기준',
+    redditTitle: 'Reddit 화제 랭킹 · Top 5', redditSub: '24시간 언급 최다 종목 · ApeWisdom', redditMentions: '회 언급',
     thName: '종목', thPrice: '현재가', thChgPct: '등락률', thChg: '등락폭',
     thOpen: '시가', thHigh: '고가', thLow: '저가', thPrev: '전일종가',
     thVol: '거래량', thAmt: '거래대금', thTurn: '회전율',
@@ -178,6 +322,37 @@ const I18N = {
     notFound: '종목을 찾을 수 없습니다: ', exists: '이미 관심종목에 있습니다',
     wrongMarket: '은(는) 미국 상장 종목이 아닙니다. 해당 시장 페이지를 이용하세요',
     netErr: '요청 실패. 네트워크를 확인하세요',
+    ana: {
+      title: '종목 분석', loading: '분석 중…', err: '분석 데이터 로드 실패',
+      score: '종합 점수', basis: '일봉 기술지표·옵션 체인·공매도 데이터 기반',
+      v: { strong_bull: '강한 매수우위', bull: '단기 매수우위', neutral: '중립·횡보', bear: '단기 매도우위', strong_bear: '강한 매도우위' },
+      sig: {
+        macd_golden: 'MACD 골든크로스', macd_death: 'MACD 데드크로스',
+        macd_hist_up: '히스토그램 상승', macd_hist_down: '히스토그램 하락',
+        ma_bull: 'MA 정배열', ma_bear: 'MA 역배열', ma_mixed: 'MA 혼조',
+        px_above_ma20: 'MA20 상회', px_below_ma20: 'MA20 하회',
+        rsi_overbought: 'RSI 과매수', rsi_oversold: 'RSI 과매도', rsi_bullzone: 'RSI 강세권', rsi_bearzone: 'RSI 약세권',
+        kdj_golden: 'KDJ 골든크로스', kdj_death: 'KDJ 데드크로스', kdj_bull: 'KDJ 강세', kdj_bear: 'KDJ 약세',
+        kdj_j_hot: 'J값 과열', kdj_j_cold: 'J값 침체',
+        boll_break_up: '볼린저 상단 돌파', boll_break_down: '볼린저 하단 이탈',
+        vol_surge_up: '거래량 급증(상승)', vol_surge_down: '거래량 급증(하락)',
+        mom_strong: '5일 모멘텀 강세', mom_weak: '5일 모멘텀 약세',
+      },
+      volRatio: '거래량비', mom5: '5일 등락', mom20: '20일 등락', support: '지지', resistance: '저항',
+      optTitle: '옵션 데이터', pcrVol: 'P/C(거래량)', pcrOi: 'P/C(미결제)', maxPain: '맥스페인', atmIv: 'ATM IV', nearExp: '근월물',
+      optSent: { bullish: '옵션 흐름 강세 우위', bearish: '옵션 흐름 약세 우위', balanced: '옵션 흐름 중립' },
+      unusual: '오늘의 이상 거래', noUnusual: '오늘 이상 거래 없음', optNa: '옵션 데이터 없음',
+      shTitle: '공매도 데이터', shRatio: '커버 소요일', shShares: '공매도 주수', shPct: '유통주 비중',
+      socTitle: '개미 관심도', socSub: 'Reddit 24시간 언급량 · ApeWisdom',
+      socMentions: 'Reddit 언급', socRank: 'Reddit 순위', socTrend: '24시간 전 대비', socUpvotes: '추천',
+      socNotInTop: '개인 관심 낮음 — Reddit 상위 100 밖',
+      sentLabel: { bull: '개미 매수우위', bear: '개미 매도우위', mixed: '개미 방향 혼조' },
+      sentReason: { opt_bull: '콜 편중', opt_bear: '풋 편중 헤지', px_up: '가격 상승', px_down: '가격 하락', buzz: '언급 급증' },
+      sentBasis: '언급 추세·옵션 포지션·모멘텀 기반 추정',
+      newsTitle: '최근 뉴스', newsSub: '최근 48시간 · 미국 동부시간', newsNone: '최근 48시간 주요 뉴스 없음',
+      agoMin: (n) => `${n}분 전`, agoHr: (n) => `${n}시간 전`, agoDay: (n) => `${n}일 전`,
+      note: '일봉 기술지표·옵션 체인·공매도 데이터 기반의 정량 신호입니다. 참고용이며 투자 조언이 아닙니다.',
+    },
   },
 };
 const VALID_LANGS = LANGS.map(l => l.code);
@@ -404,8 +579,11 @@ function renderSessionPill(sess) {
 
 /* ---------- 视图路由 ---------- */
 function currentView() {
-  const m = location.hash.match(/^#i=(\w+)$/);
-  return m && CONSTITUENTS[m[1]] ? m[1] : 'main';
+  let m = location.hash.match(/^#i=(\w+)$/);
+  if (m && CONSTITUENTS[m[1]]) return { type: 'index', key: m[1] };
+  m = location.hash.match(/^#k=(us[A-Za-z0-9.]+)$/);
+  if (m) return { type: 'chart', code: m[1] };
+  return { type: 'main' };
 }
 
 /* ---------- 语言菜单 ---------- */
@@ -438,6 +616,7 @@ function renderStatics() {
   document.documentElement.lang = { en: 'en', zh: 'zh-CN', tw: 'zh-TW', ja: 'ja', ko: 'ko' }[lang];
   document.title = t('docTitle');
   $('navUS').textContent = t('navUS');
+  $('navKR').textContent = t('navKR');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
   $('idxTitle').textContent = t('indices');
@@ -447,6 +626,9 @@ function renderStatics() {
   $('optTitle').textContent = t('optTitle');
   $('optMore').textContent = t('optMore');
   renderOptFlow();
+  $('redditTitle').textContent = t('redditTitle');
+  $('redditSub').textContent = t('redditSub');
+  renderRedditRank();
   $('wlTitle').textContent = t('watchlist');
   $('addBtn').textContent = t('add');
   $('codeInput').placeholder = t('placeholder');
@@ -454,6 +636,8 @@ function renderStatics() {
   $('backBtn').textContent = t('back');
   $('flowNote').textContent = t('flowNote');
   $('empty').textContent = t('empty');
+  renderChartStatics();
+  if (anaData) renderAnalysis();
   buildLangMenu();
 }
 
@@ -577,6 +761,36 @@ async function refreshOptFlow() {
   } catch (e) { /* 保持上次数据 */ }
 }
 
+/* ---------- Reddit 散户讨论排行榜（首页 Top5） ---------- */
+let redditTop = null;
+let redditFetchedAt = 0;
+function renderRedditRank() {
+  const el = $('redditRank');
+  if (!el) return;
+  const items = redditTop?.top || [];
+  if (!items.length) { el.innerHTML = `<div class="empty" style="padding:14px">${t('optScanning')}</div>`; return; }
+  el.innerHTML = items.map((r, idx) => {
+    const c = r.chg == null ? 'flat' : cls(r.chg);
+    return `<a class="rr-item" href="#k=us${r.ticker}" title="${escapeHtml(r.name || '')}">
+      <span class="rr-rank">${idx + 1}</span>
+      <span class="rr-sym">${r.ticker}</span>
+      <span class="rr-name">${escapeHtml(r.name || '')}</span>
+      <span class="rr-cnt">${r.mentions.toLocaleString(LOCALES[lang])} <em>${t('redditMentions')}</em></span>
+      <span class="rr-chg ${c}">${r.chg == null ? '' : sign(r.chg) + r.chg + '%'}</span>
+    </a>`;
+  }).join('');
+}
+async function refreshRedditRank() {
+  if (Date.now() - redditFetchedAt < 300000 && redditTop) return;   // 5分钟一拉
+  try {
+    const resp = await fetch('/api/social-top');
+    if (!resp.ok) return;
+    redditTop = await resp.json();
+    redditFetchedAt = Date.now();
+    renderRedditRank();
+  } catch (e) { /* 保持上次 */ }
+}
+
 function renderWatch(map, sess) {
   const showExt = sess !== 'regular';               // 开盘后隐藏非常规时段列
   // 列名按数据的真实时段标注（数据源只有盘前/盘后；夜盘和休市时展示的是最近盘后数据）
@@ -627,7 +841,7 @@ function renderWatch(map, sess) {
     const grpBadge = `<span class="grp-badge ${groups[code] ? '' : 'ghost'}"
       onclick="promptGroup('${code}')">${groups[code] || t('groupAdd')}</span>`;
     return `<tr class="${flash}" draggable="true" data-code="${code}">${handle}
-      <td class="col-name"><div class="stock-name">${dispName(q)}</div>
+      <td class="col-name"><div class="stock-name clickable" onclick="location.hash='k=${code}'">${dispName(q)}</div>
           <div class="stock-code">${sym(q.code)} · USD ${grpBadge}</div></td>
       <td class="price ${c}">${fmtNum(q.price)}</td>
       <td><span class="chg-badge ${c}">${sign(q.changePercent)}${fmtNum(q.changePercent)}%</span></td>
@@ -754,6 +968,299 @@ function removeStock(code) {
   refresh();
 }
 
+/* ---------- 个股K线视图 ---------- */
+const PERIODS = ['m1', 'm5', 'm15', 'd', 'w', 'mo', 'y'];
+let kchart = null;
+let chartCode = null;
+let chartPeriod = PERIODS.includes(localStorage.getItem('kperiod'))
+  ? localStorage.getItem('kperiod') : 'd';
+let klineKey = '';
+let klineAt = 0;
+
+function renderChartStatics() {
+  $('chartBackBtn').textContent = t('back');
+  $('chartNote').textContent = t('chartNote');
+  $('periodTabs').innerHTML = PERIODS.map(p =>
+    `<button class="grp-tab ${chartPeriod === p ? 'active' : ''}" data-p="${p}">${t('p_' + p)}</button>`).join('');
+  $('periodTabs').querySelectorAll('.grp-tab').forEach(b => {
+    b.onclick = () => {
+      chartPeriod = b.dataset.p;
+      localStorage.setItem('kperiod', chartPeriod);
+      renderChartStatics();
+      loadKline();
+    };
+  });
+  const inds = kchart ? kchart.ind : { ma: true, boll: false, macd: true };
+  $('indToggles').innerHTML = ['ma', 'boll', 'macd'].map(k =>
+    `<button class="grp-tab ${inds[k] ? 'active' : ''}" data-k="${k}">${k.toUpperCase()}</button>`).join('');
+  $('indToggles').querySelectorAll('.grp-tab').forEach(b => {
+    b.onclick = () => {
+      if (!kchart) return;
+      kchart.setIndicators({ [b.dataset.k]: !kchart.ind[b.dataset.k] });
+      renderChartStatics();
+    };
+  });
+}
+
+function renderChartHead(q, sess) {
+  if (!q || q.error) return;
+  const c = cls(q.change);
+  const ext = (sess !== 'regular' && q.extPrice != null)
+    ? `<span class="ch-ext ${cls(q.extChange)}">${t('sess_' + (q.extSession || 'after'))} ${fmtNum(q.extPrice)} (${sign(q.extChangePercent)}${fmtNum(q.extChangePercent)}%)</span>`
+    : '';
+  $('chartHead').innerHTML = `
+    <span class="ch-name">${dispName(q)}</span>
+    <span class="ch-sym">${sym(q.code)} · USD</span>
+    <span class="ch-price ${c}">${fmtNum(q.price)}</span>
+    <span class="ch-chg ${c}">${sign(q.change)}${fmtNum(q.change)} (${sign(q.changePercent)}${fmtNum(q.changePercent)}%)</span>
+    ${ext}`;
+}
+
+let klineLoadedKey = '';   // 最近一次成功装载的序列，用于判断"同序列刷新"
+
+async function loadKline() {
+  if (!chartCode) return;
+  const code = chartCode, period = chartPeriod;
+  const key = code + '|' + period;
+  klineKey = key;   // 先记录，失败也按TTL节流重试
+  klineAt = Date.now();
+  $('chartMsg').classList.add('hidden');
+  try {
+    const resp = await fetch(`/api/kline?code=${encodeURIComponent(code)}&period=${period}`);
+    const d = await resp.json();
+    if (!resp.ok || d.error || !(d.candles || []).length) throw new Error('no data');
+    if (chartCode === code && chartPeriod === period) {
+      // 同序列的定时刷新保留用户的缩放/平移位置
+      kchart.setData(d.candles, period, d.tz, klineLoadedKey === key);
+      klineLoadedKey = key;
+    }
+  } catch (e) {
+    $('chartMsg').textContent = t('chartErr');
+    $('chartMsg').classList.remove('hidden');
+  }
+}
+
+/* ---------- 个股分析面板 ---------- */
+let anaData = null;
+let anaCode = '';
+let anaAt = 0;
+
+async function loadAnalysis() {
+  if (!chartCode) return;
+  const code = chartCode;
+  anaCode = code;          // 先记录，失败也按TTL节流重试
+  anaAt = Date.now();
+  $('anaBody').innerHTML = `<div class="empty">${t('ana').loading}</div>`;
+  try {
+    const resp = await fetch('/api/analysis?code=' + encodeURIComponent(code));
+    const d = await resp.json();
+    if (!resp.ok || d.error) throw new Error('bad');
+    if (chartCode === code) {
+      anaData = d;
+      renderAnalysis();
+    }
+  } catch (e) {
+    if (chartCode === code) $('anaBody').innerHTML = `<div class="empty">${t('ana').err}</div>`;
+  }
+}
+
+function renderAnalysis() {
+  const A = t('ana');
+  $('anaTitle').textContent = A.title;
+  $('anaMeta').textContent = A.basis;
+  const d = anaData;
+  if (!d) return;
+  const i = d.ind;
+  const vcls = d.score >= 15 ? 'up' : d.score <= -15 ? 'down' : 'flat';
+  const needle = Math.min(Math.max((d.score + 100) / 2, 2), 98);
+
+  const chips = d.signals.map(s =>
+    `<span class="sig-chip ${s.t}">${A.sig[s.k] || s.k}</span>`).join('');
+
+  const cards = `
+    <div class="ana-card"><div class="ac-l">MACD (12,26,9)</div>
+      <div class="ac-v">DIF ${fmtNum(i.dif, 3)} · DEA ${fmtNum(i.dea, 3)}<br>HIST ${fmtNum(i.hist, 3)}</div></div>
+    <div class="ana-card"><div class="ac-l">RSI</div>
+      <div class="ac-v">RSI14 <b class="${i.rsi14 > 70 ? 'down' : i.rsi14 < 30 ? 'up' : ''}">${fmtNum(i.rsi14, 1)}</b><br>RSI6 ${fmtNum(i.rsi6, 1)}</div></div>
+    <div class="ana-card"><div class="ac-l">KDJ (9,3,3)</div>
+      <div class="ac-v">K ${fmtNum(i.k, 1)} · D ${fmtNum(i.d, 1)}<br>J ${fmtNum(i.j, 1)}</div></div>
+    <div class="ana-card"><div class="ac-l">BOLL (20,2)</div>
+      <div class="ac-v">${fmtNum(i.bollLow)} ~ ${fmtNum(i.bollUp)}<br>%B ${fmtNum(i.pb, 1)}%</div></div>
+    <div class="ana-card"><div class="ac-l">MA</div>
+      <div class="ac-v">MA5 ${fmtNum(i.ma5)} · MA10 ${fmtNum(i.ma10)}<br>MA20 ${fmtNum(i.ma20)} · MA60 ${fmtNum(i.ma60)}</div></div>
+    <div class="ana-card"><div class="ac-l">${A.volRatio} / ${A.mom5} / ${A.mom20}</div>
+      <div class="ac-v">${fmtNum(i.volRatio, 2)}× · <span class="${cls(i.mom5)}">${sign(i.mom5)}${fmtNum(i.mom5, 1)}%</span> · <span class="${cls(i.mom20)}">${sign(i.mom20)}${fmtNum(i.mom20, 1)}%</span></div></div>
+    <div class="ana-card"><div class="ac-l">${A.support} / ${A.resistance}</div>
+      <div class="ac-v"><span class="up">${fmtNum(i.support)}</span> / <span class="down">${fmtNum(i.resistance)}</span></div></div>`;
+
+  let opt = `<div class="empty">${A.optNa}</div>`;
+  if (d.options) {
+    const o = d.options;
+    const sentCls = o.sentiment === 'bullish' ? 'up' : o.sentiment === 'bearish' ? 'down' : 'flat';
+    const stats = `
+      <div class="opt-stat">${A.pcrVol}<b>${fmtNum(o.pcrVol, 2)}</b></div>
+      <div class="opt-stat">${A.pcrOi}<b>${fmtNum(o.pcrOi, 2)}</b></div>
+      <div class="opt-stat">${A.maxPain}<b>${fmtNum(o.maxPain, o.maxPain % 1 ? 2 : 0)}</b></div>
+      <div class="opt-stat">${A.atmIv}<b>${o.atmIv != null ? fmtNum(o.atmIv, 1) + '%' : '--'}</b></div>
+      <div class="opt-stat">${A.nearExp}<b>${o.expiry || '--'}</b></div>
+      <div class="opt-stat"><span class="${sentCls}" style="font-weight:700">${A.optSent[o.sentiment]}</span></div>`;
+    let rows = `<div class="empty" style="padding:14px">${A.noUnusual}</div>`;
+    if (o.unusual && o.unusual.length) {
+      rows = `<div class="table-wrap"><table class="mini-table"><tbody>` + o.unusual.map(u => {
+        const c = u.type === 'C' ? 'up' : 'down';
+        return `<tr>
+          <td><span class="chg-badge ${c}">${u.type === 'C' ? 'CALL' : 'PUT'}</span></td>
+          <td class="num">${fmtNum(u.strike, u.strike % 1 ? 2 : 0)}</td>
+          <td class="num flat">${u.expiry}</td>
+          <td class="num">Vol ${u.vol.toLocaleString(LOCALES[lang])}</td>
+          <td class="num flat">OI ${u.oi.toLocaleString(LOCALES[lang])}</td>
+          <td class="num">${fmtNum(u.volOi, 1)}×</td>
+          <td class="price ${c}">${fmtPrem(u.premium)}</td>
+          <td class="num flat">${u.iv != null ? 'IV ' + fmtNum(u.iv, 1) + '%' : ''}</td>
+        </tr>`;
+      }).join('') + `</tbody></table></div>`;
+    }
+    opt = `<div class="section-title" style="margin-top:16px"><span>${A.optTitle}</span><span class="section-note">${A.unusual}</span></div>
+      <div class="opt-stat-row">${stats}</div>${rows}`;
+  }
+
+  let sh = '';
+  if (d.shortInt) {
+    const s = d.shortInt;
+    sh = `<div class="opt-stat-row" style="margin-top:12px">
+      <div class="opt-stat">${A.shTitle}</div>
+      <div class="opt-stat">${A.shRatio}<b>${fmtNum(s.ratio, 2)}</b></div>
+      <div class="opt-stat">${A.shShares}<b>${s.shares != null ? fmtVolume(s.shares) : '--'}</b></div>
+      <div class="opt-stat">${A.shPct}<b>${s.pctFloat != null ? fmtNum(s.pctFloat, 2) + '%' : '--'}</b></div>
+    </div>`;
+  }
+
+  // 散户热度（Reddit 提及）+ 散户情绪总结
+  let soc = '';
+  {
+    const s = d.social;
+    const sent = retailSentiment(d);
+    const scls = sent.label === 'bull' ? 'up' : sent.label === 'bear' ? 'down' : 'flat';
+    const reasonTxt = sent.reasons.map(r => A.sentReason[r]).filter(Boolean).join(' · ');
+    const sentLine = `<div class="sentiment-box">
+      <span class="sent-badge ${scls}">${A.sentLabel[sent.label]}</span>
+      <span class="sent-basis">${reasonTxt ? reasonTxt + ' — ' : ''}${A.sentBasis}</span>
+    </div>`;
+
+    let inner;
+    if (s && s.inTop) {
+      const tc = s.chg == null ? 'flat' : cls(s.chg);
+      inner = `<div class="opt-stat-row">
+        <div class="opt-stat">${A.socMentions}<b>${s.mentions.toLocaleString(LOCALES[lang])}</b></div>
+        <div class="opt-stat">${A.socTrend}<b class="${tc}">${s.chg == null ? '--' : sign(s.chg) + fmtNum(s.chg, 0) + '%'}</b></div>
+        <div class="opt-stat">${A.socRank}<b>#${s.rank}</b></div>
+        <div class="opt-stat">${A.socUpvotes}<b>${s.upvotes != null ? fmtVolume(s.upvotes) : '--'}</b></div>
+      </div>`;
+    } else {
+      inner = `<div class="empty" style="padding:14px">${A.socNotInTop}</div>`;
+    }
+    soc = `<div class="section-title" style="margin-top:16px"><span>${A.socTitle}</span><span class="section-note">${A.socSub}</span></div>
+      ${sentLine}${inner}`;
+  }
+
+  // 近期新闻（近48h，带美东时间+相对时间+来源）
+  let news = '';
+  {
+    const items = d.news || [];
+    let rows;
+    if (items.length) {
+      rows = '<div class="news-list">' + items.map(n => `
+        <a class="news-item" href="${n.link}" target="_blank" rel="noopener noreferrer">
+          <div class="news-title">${escapeHtml(n.title)}</div>
+          <div class="news-meta"><span class="news-src">${escapeHtml(n.publisher || '')}</span>
+            <span class="news-time">${etTime(n.ts)} · ${relTime(n.ts)}</span></div>
+        </a>`).join('') + '</div>';
+    } else {
+      rows = `<div class="empty" style="padding:14px">${A.newsNone}</div>`;
+    }
+    news = `<div class="section-title" style="margin-top:16px"><span>${A.newsTitle}</span><span class="section-note">${A.newsSub}</span></div>${rows}`;
+  }
+
+  $('anaBody').innerHTML = `
+    <div class="ana-verdict">
+      <span class="av-score ${vcls}">${d.score > 0 ? '+' : ''}${d.score}</span>
+      <span class="av-verdict ${vcls}">${A.v[d.verdict]}</span>
+      <div class="av-gauge"><div class="av-needle" style="left:${needle}%"></div></div>
+    </div>
+    <div class="sig-wrap">${chips}</div>
+    <div class="ana-cards">${cards}</div>
+    ${opt}${sh}${soc}${news}
+    <p class="hint" style="margin-top:12px">${A.note}</p>`;
+}
+
+/* 散户情绪启发式：综合 Reddit 提及趋势 + 期权持仓方向 + 价格动量 */
+function retailSentiment(d) {
+  const s = d.social, o = d.options, i = d.ind;
+  let score = 0;
+  const reasons = [];
+  if (o && o.pcrVol != null) {
+    if (o.pcrVol < 0.7) { score += 2; reasons.push('opt_bull'); }
+    else if (o.pcrVol > 1.3) { score -= 2; reasons.push('opt_bear'); }
+  }
+  if (i && i.mom5 != null) {
+    if (i.mom5 > 3) { score += 1; reasons.push('px_up'); }
+    else if (i.mom5 < -3) { score -= 1; reasons.push('px_down'); }
+  }
+  if (s && s.inTop && s.chg != null && s.chg > 50) {
+    reasons.push('buzz');
+    if (i && i.mom5 > 0) score += 1; else if (i && i.mom5 < 0) score -= 0.5;
+  }
+  const label = score >= 1.5 ? 'bull' : score <= -1.5 ? 'bear' : 'mixed';
+  return { label, reasons };
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function etTime(ts) {
+  return new Date(ts * 1000).toLocaleString(LOCALES[lang], {
+    timeZone: 'America/New_York', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  });
+}
+function relTime(ts) {
+  const A = t('ana');
+  const mins = Math.max(0, Math.floor(Date.now() / 1000 - ts) / 60);
+  if (mins < 60) return A.agoMin(Math.floor(mins) || 1);
+  const hrs = mins / 60;
+  if (hrs < 24) return A.agoHr(Math.floor(hrs));
+  return A.agoDay(Math.floor(hrs / 24));
+}
+
+async function refreshChartView(code, sess) {
+  if (!kchart) {
+    kchart = new KChart($('kcanvas'));
+    window.addEventListener('resize', () => kchart && kchart.render());
+  }
+  if (chartCode !== code) {
+    chartCode = code;
+    kchart.setData([], chartPeriod);   // 清空旧图
+    anaData = null;
+    renderChartStatics();
+  }
+  // 报价头随行情刷新（1秒级）
+  try {
+    const map = await fetchQuotes([code]);
+    renderChartHead(map[code], sess);
+  } catch (e) { /* 保持上次 */ }
+  // K线按周期节流：分钟级30秒，其余2分钟
+  const ttl = chartPeriod.startsWith('m') ? 30000 : 120000;
+  if (klineKey !== code + '|' + chartPeriod || Date.now() - klineAt > ttl) {
+    await loadKline();
+  }
+  // 分析面板：换股立即加载，同股5分钟刷新一次
+  if (anaCode !== code || Date.now() - anaAt > 300000) {
+    loadAnalysis();   // 异步，不阻塞行情刷新
+  }
+  // 兜底重绘：视图刚变可见时布局才有宽度（canvas绘制开销极小）
+  if (kchart.candles.length) kchart.render();
+}
+
 function setStatus(ok, text) {
   $('statusDot').className = 'dot' + (ok ? '' : ' err');
   $('statusText').textContent = text;
@@ -766,10 +1273,11 @@ async function refresh() {
   const view = currentView();
   const sess = usSession();
   renderSessionPill(sess);
-  $('mainView').classList.toggle('hidden', view !== 'main');
-  $('detailView').classList.toggle('hidden', view === 'main');
+  $('mainView').classList.toggle('hidden', view.type !== 'main');
+  $('detailView').classList.toggle('hidden', view.type !== 'index');
+  $('chartView').classList.toggle('hidden', view.type !== 'chart');
   try {
-    if (view === 'main') {
+    if (view.type === 'main') {
       const codes = [...INDICES.map(i => i.code), ...sectorCodes(SECTORS), ...watchlist];
       const map = await fetchQuotes(codes);
       lastMap = map;
@@ -778,11 +1286,14 @@ async function refresh() {
       renderHeatmap(map, sess);
       if (!dragging) renderWatch(map, sess);
       refreshOptFlow();   // 独立节流，不阻塞行情刷新
-    } else {
-      const ix = INDICES.find(i => i.key === view);
-      const codes = [ix.code, ...CONSTITUENTS[view].map(tk => 'us' + tk)];
+      refreshRedditRank();
+    } else if (view.type === 'index') {
+      const ix = INDICES.find(i => i.key === view.key);
+      const codes = [ix.code, ...CONSTITUENTS[view.key].map(tk => 'us' + tk)];
       const map = await fetchQuotes(codes);
-      renderDetail(view, map);
+      renderDetail(view.key, map);
+    } else {
+      await refreshChartView(view.code, sess);
     }
     setStatus(true, t('updated') + ' ' + nyTimeString());
   } catch (e) {

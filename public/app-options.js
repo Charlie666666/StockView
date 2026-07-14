@@ -10,7 +10,7 @@ const LANGS = [
 const I18N = {
   en: {
     docTitle: 'Options Flow · StockView',
-    navUS: 'US', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow',
+    navUS: 'US', navKR: 'KR', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow',
     updated: 'Updated', failed: 'Refresh failed, retrying',
     scanning: 'First scan in progress (about 1 minute)…',
     pageTitle: 'Unusual Options Activity',
@@ -28,7 +28,7 @@ const I18N = {
   },
   zh: {
     docTitle: '期权异动 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期权异动',
+    navUS: '美股', navKR: '韩股', navHK: '港股', navA: 'A股', navOpt: '期权异动',
     updated: '已更新', failed: '刷新失败，将自动重试',
     scanning: '首轮扫描进行中（约 1 分钟）…',
     pageTitle: '个股期权异动大单',
@@ -46,7 +46,7 @@ const I18N = {
   },
   tw: {
     docTitle: '期權異動 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期權異動',
+    navUS: '美股', navKR: '韓股', navHK: '港股', navA: 'A股', navOpt: '期權異動',
     updated: '已更新', failed: '刷新失敗，將自動重試',
     scanning: '首輪掃描進行中（約 1 分鐘）…',
     pageTitle: '個股期權異動大單',
@@ -64,7 +64,7 @@ const I18N = {
   },
   ja: {
     docTitle: 'オプションフロー · StockView',
-    navUS: '米国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー',
+    navUS: '米国株', navKR: '韓国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー',
     updated: '更新', failed: '更新に失敗しました。再試行します',
     scanning: '初回スキャン中（約1分）…',
     pageTitle: '個別株オプション異常フロー',
@@ -82,7 +82,7 @@ const I18N = {
   },
   ko: {
     docTitle: '옵션 플로우 · StockView',
-    navUS: '미국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우',
+    navUS: '미국', navKR: '한국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우',
     updated: '업데이트', failed: '새로고침 실패, 재시도 중',
     scanning: '첫 스캔 진행 중 (약 1분)…',
     pageTitle: '개별주 옵션 이상 거래',
@@ -172,6 +172,7 @@ function renderStatics() {
   document.documentElement.lang = { en: 'en', zh: 'zh-CN', tw: 'zh-TW', ja: 'ja', ko: 'ko' }[lang];
   document.title = t('docTitle');
   $('navUS').textContent = t('navUS');
+  $('navKR').textContent = t('navKR');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
   $('pageTitle').textContent = t('pageTitle');

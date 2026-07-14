@@ -239,6 +239,123 @@ tbody tr:hover .grp-badge.ghost { opacity: 1; }
   border-radius: 4px; padding: 0 4px; margin-left: 4px; vertical-align: 1px;
 }
 
+/* ===== 个股K线视图 ===== */
+.stock-name.clickable { cursor: pointer; }
+.stock-name.clickable:hover { color: var(--accent); text-decoration: underline; }
+
+.chart-head {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; margin-bottom: 12px;
+}
+.ch-name { font-size: 18px; font-weight: 700; }
+.ch-sym { font-size: 12px; color: var(--text-dim); }
+.ch-price { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ch-chg { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ch-ext { font-size: 12px; font-variant-numeric: tabular-nums; opacity: .9; }
+
+.chart-bar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.chart-bar .group-tabs { margin-bottom: 0; }
+
+.chart-box {
+  position: relative; background: #111820; border: 1px solid var(--border);
+  border-radius: 12px; height: 520px; overflow: hidden;
+}
+#kcanvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+.chart-msg {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim); font-size: 14px; background: rgba(17,24,32,.6);
+}
+/* .chart-msg 的 display:flex 定义在 .hidden 之后会覆盖它，需更高优先级显式隐藏，
+   否则透明遮罩会罩住 canvas 拦截所有鼠标事件 */
+.chart-msg.hidden { display: none; }
+@media (max-width: 720px) { .chart-box { height: 380px; } }
+
+/* ===== 个股分析面板 ===== */
+.ana-verdict {
+  display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 20px;
+}
+.av-score { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.av-verdict { font-size: 16px; font-weight: 700; }
+.av-gauge {
+  flex: 1; min-width: 160px; height: 8px; border-radius: 4px; position: relative;
+  background: linear-gradient(90deg, var(--down), #5b6672 50%, var(--up));
+}
+.av-needle {
+  position: absolute; top: -4px; width: 3px; height: 16px;
+  background: #fff; border-radius: 2px; box-shadow: 0 0 4px rgba(0,0,0,.6);
+}
+
+.sig-wrap { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.sig-chip {
+  padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.sig-chip.bull { background: var(--up-bg); color: var(--up); border-color: color-mix(in srgb, var(--up) 40%, transparent); }
+.sig-chip.bear { background: var(--down-bg); color: var(--down); border-color: color-mix(in srgb, var(--down) 40%, transparent); }
+.sig-chip.neut { background: rgba(138,151,165,.12); color: var(--text-dim); border-color: var(--border); }
+
+.ana-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+.ana-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.ana-card .ac-l { font-size: 11px; color: var(--text-dim); font-weight: 600; margin-bottom: 5px; }
+.ana-card .ac-v { font-size: 13px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.ana-card .ac-v b { font-weight: 700; }
+
+.opt-stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.opt-stat {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 8px 14px; font-size: 12px; color: var(--text-dim);
+}
+.opt-stat b { display: block; color: var(--text); font-size: 15px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+.mini-table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+.mini-table td { padding: 8px 12px; }
+.mini-table .chg-badge { min-width: 48px; font-size: 11px; padding: 2px 6px; }
+
+/* 散户情绪总结条 */
+.sentiment-box {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 14px; margin-bottom: 8px;
+}
+.sent-badge { font-size: 14px; font-weight: 700; }
+.sent-basis { font-size: 12px; color: var(--text-dim); }
+
+/* Reddit 散户讨论排行榜（首页） */
+.reddit-rank { display: flex; flex-direction: column; gap: 6px; }
+.rr-item {
+  display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; transition: border-color .15s;
+}
+.rr-item:hover { border-color: var(--accent); }
+.rr-rank {
+  flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; text-align: center;
+  line-height: 22px; font-size: 12px; font-weight: 700;
+  background: rgba(74,158,255,.15); color: var(--accent);
+}
+.rr-sym { font-weight: 700; font-size: 14px; min-width: 54px; }
+.rr-name { flex: 1; font-size: 12px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rr-cnt { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rr-cnt em { font-style: normal; font-weight: 400; font-size: 11px; color: var(--text-dim); }
+.rr-chg { font-size: 12px; font-weight: 700; min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) { .rr-name { display: none; } }
+
+/* 近期新闻列表 */
+.news-list { display: flex; flex-direction: column; gap: 6px; }
+.news-item {
+  display: block; text-decoration: none; color: var(--text);
+  background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+  padding: 11px 14px; transition: border-color .15s;
+}
+.news-item:hover { border-color: var(--accent); }
+.news-title { font-size: 13px; font-weight: 600; line-height: 1.4; }
+.news-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 5px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.news-src { font-weight: 600; }
+.news-time { font-variant-numeric: tabular-nums; }
+
 /* ===== 交易时段标识 ===== */
 .session-pill {
   padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;

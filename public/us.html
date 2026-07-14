@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>美股行情 · 股票分析</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%23111820'/%3E%3Cpath d='M6 24 C12 14, 36 14, 42 24 C36 34, 12 34, 6 24 Z' fill='none' stroke='%234a9eff' stroke-width='3.4'/%3E%3Crect x='21' y='16.5' width='6' height='15' rx='2' fill='%231fbf75'/%3E%3Cline x1='24' y1='11.5' x2='24' y2='36.5' stroke='%231fbf75' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css?v=20260714b">
 </head>
 <body class="us-theme">
 <div class="container">
@@ -14,6 +14,7 @@
     <span class="session-pill" id="sessionPill"></span>
     <nav class="tabs">
       <a href="/us" class="active" id="navUS">美股</a>
+      <a href="/kr" id="navKR">韩股</a>
       <a href="/hk" id="navHK">港股</a>
       <a href="/a" id="navA">A股</a>
     </nav>
@@ -36,6 +37,9 @@
     <div class="section-title"><span id="optTitle"></span>
       <a href="/options" class="section-more" id="optMore"></a></div>
     <div class="opt-flow-strip" id="optFlowStrip"></div>
+
+    <div class="section-title"><span id="redditTitle"></span><span class="section-note" id="redditSub"></span></div>
+    <div class="reddit-rank" id="redditRank"></div>
 
     <div class="section-title"><span id="wlTitle"></span></div>
     <div class="group-tabs" id="groupTabs"></div>
@@ -62,10 +66,30 @@
     <div class="tiles" id="consTiles"></div>
     <p class="hint" id="flowNote" style="margin-top:14px"></p>
   </div>
+
+  <!-- 个股K线视图 -->
+  <div id="chartView" class="hidden">
+    <button class="back-btn" id="chartBackBtn" onclick="location.hash=''">← 返回</button>
+    <div class="chart-head" id="chartHead"></div>
+    <div class="chart-bar">
+      <div class="group-tabs" id="periodTabs"></div>
+      <div class="group-tabs ind-toggles" id="indToggles"></div>
+    </div>
+    <div class="chart-box">
+      <canvas id="kcanvas"></canvas>
+      <div class="chart-msg hidden" id="chartMsg"></div>
+    </div>
+    <p class="hint" id="chartNote" style="margin-top:10px"></p>
+
+    <!-- 个股分析面板 -->
+    <div class="section-title" style="margin-top:22px"><span id="anaTitle"></span><span class="section-note" id="anaMeta"></span></div>
+    <div id="anaBody"></div>
+  </div>
 </div>
 
-<script src="/sectors-data.js"></script>
-<script src="/auth.js"></script>
-<script src="/app-us.js"></script>
+<script src="/sectors-data.js?v=20260714b"></script>
+<script src="/chart.js?v=20260714b"></script>
+<script src="/auth.js?v=20260714b"></script>
+<script src="/app-us.js?v=20260714b"></script>
 </body>
 </html>

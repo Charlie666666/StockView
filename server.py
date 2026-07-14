@@ -4,8 +4,10 @@
 零依赖，仅使用 Python 标准库。运行: python server.py
 行情数据来源: 腾讯财经 (qt.gtimg.cn)，支持 A股 / 港股 / 美股
 """
+import datetime
 import hashlib
 import hmac
+import html
 import json
 import os
 import re
@@ -15,6 +17,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from zoneinfo import ZoneInfo
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, quote as urlquote
@@ -28,6 +31,7 @@ PUBLIC_DIR = Path(__file__).parent / "public"
 PAGE_ROUTES = {
     "/": "us.html",
     "/us": "us.html",
+    "/kr": "kr.html",
     "/hk": "hk.html",
     "/a": "a.html",
     "/sectors": "sectors.html",
@@ -172,6 +176,61 @@ def fetch_us_ext_yahoo(us_codes, _retried=False):
     return result
 
 
+# ---------- 大盘指数（Yahoo v7 quote，用于腾讯不覆盖的市场，如韩国 KOSPI/KOSDAQ） ----------
+INDEX_CFG = {
+    "kr": [("^KS11", "KOSPI"), ("^KQ11", "KOSDAQ")],
+}
+_index_cache = {}          # market -> (time, list)
+_index_lock = threading.Lock()
+
+
+def _yahoo_v7(symbols, _retried=False):
+    global _yahoo_auth
+    auth = _yahoo_get_auth()
+    url = ("https://query1.finance.yahoo.com/v7/finance/quote?symbols=" +
+           urlquote(",".join(symbols)) + "&crumb=" + urlquote(auth["crumb"]))
+    req = urllib.request.Request(url, headers={"User-Agent": YAHOO_UA, "Cookie": auth["cookie"]})
+    try:
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        if not _retried and e.code in (401, 403):
+            _yahoo_auth = {"cookie": "", "crumb": "", "time": 0.0}
+            return _yahoo_v7(symbols, _retried=True)
+        raise
+    return {r.get("symbol"): r for r in data.get("quoteResponse", {}).get("result", [])}
+
+
+def fetch_indices(market):
+    cfg = INDEX_CFG.get(market)
+    if not cfg:
+        return []
+    now = time.time()
+    with _index_lock:
+        hit = _index_cache.get(market)
+    if hit and now - hit[0] < 20:
+        return hit[1]
+    try:
+        raw = _yahoo_v7([s for s, _ in cfg])
+    except Exception:
+        return hit[1] if hit else []
+    result = []
+    for sym, name in cfg:
+        r = raw.get(sym) or {}
+        if r.get("regularMarketPrice") is None:
+            continue
+        result.append({
+            "symbol": sym,
+            "name": name,
+            "price": r.get("regularMarketPrice"),
+            "change": r.get("regularMarketChange"),
+            "changePercent": r.get("regularMarketChangePercent"),
+        })
+    with _index_lock:
+        _index_cache[market] = (now, result)
+    return result
+
+
 def fetch_us_ext(us_codes):
     """抓取美股非常规时段行情（盘前/盘后）。返回 {usAAPL: {extPrice,...}}。"""
     syms = ",".join("gb_" + c[2:].lower() for c in us_codes)
@@ -204,6 +263,491 @@ def fetch_us_ext(us_codes):
             "extSession": "pre" if "AM" in f[24].upper() else "after",
         }
     return result
+
+# ---------- K线数据（Yahoo v8 chart，免认证） ----------
+# period -> (yahoo interval, range, 缓存秒数)
+KLINE_CFG = {
+    "m1":  ("1m",  "2d",  30),
+    "m5":  ("5m",  "10d", 30),
+    "m15": ("15m", "30d", 30),
+    "d":   ("1d",  "2y",  300),
+    "w":   ("1wk", "10y", 300),
+    "mo":  ("1mo", "max", 3600),
+    "y":   ("1mo", "max", 3600),   # 年K由月K聚合
+}
+_kline_cache = {}
+_kline_lock = threading.Lock()
+
+
+def _aggregate_yearly(candles, tz_name):
+    """月K聚合为年K：[t,o,h,l,c,v] 按交易所时区的年份分组"""
+    zone = ZoneInfo(tz_name or "America/New_York")
+    out = []
+    cur = None
+    for t, o, h, l, c, v in candles:
+        year = datetime.datetime.fromtimestamp(t, zone).year
+        if cur and cur[0] == year:
+            cur[3] = max(cur[3], h)
+            cur[4] = min(cur[4], l)
+            cur[5] = c
+            cur[6] += v
+        else:
+            if cur:
+                out.append(cur[1:])
+            cur = [year, t, o, h, l, c, v]
+    if cur:
+        out.append(cur[1:])
+    return out
+
+
+def fetch_kline(code, period):
+    interval, rng, _ = KLINE_CFG[period]
+    sym = code[2:].replace(".", "-")
+    # 分钟级带盘前盘后K线（Yahoo 默认只给盘中，盘前/盘后时段会看起来"不更新"）
+    pre_post = "&includePrePost=true" if period.startswith("m") else ""
+    url = (f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}"
+           f"?interval={interval}&range={rng}{pre_post}")
+    req = urllib.request.Request(url, headers={"User-Agent": YAHOO_UA})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        d = json.loads(resp.read())
+    r = d["chart"]["result"][0]
+    ts = r.get("timestamp") or []
+    q = r["indicators"]["quote"][0]
+    o_, h_, l_, c_, v_ = (q.get(k) or [] for k in ("open", "high", "low", "close", "volume"))
+    candles = []
+    for i in range(len(ts)):
+        if i >= len(c_) or c_[i] is None or o_[i] is None or h_[i] is None or l_[i] is None:
+            continue
+        candles.append([ts[i], round(o_[i], 4), round(h_[i], 4),
+                        round(l_[i], 4), round(c_[i], 4), int(v_[i] or 0)])
+    tz_name = (r.get("meta") or {}).get("exchangeTimezoneName", "America/New_York")
+    if period == "y":
+        candles = _aggregate_yearly(candles, tz_name)
+    return {"code": code, "period": period, "tz": tz_name, "candles": candles}
+
+
+def fetch_kline_cached(code, period):
+    key = (code, period)
+    ttl = KLINE_CFG[period][2]
+    now = time.time()
+    with _kline_lock:
+        hit = _kline_cache.get(key)
+        if hit and now - hit[0] < ttl:
+            return hit[1]
+    data = fetch_kline(code, period)
+    with _kline_lock:
+        if len(_kline_cache) > 500:
+            _kline_cache.clear()
+        _kline_cache[key] = (now, data)
+    return data
+
+
+# ---------- 个股技术分析引擎（基于日K + 期权链 + 做空数据） ----------
+_ana_cache = {}
+_ana_lock = threading.Lock()
+
+
+def _ema_series(vals, n):
+    k = 2 / (n + 1)
+    out = []
+    prev = None
+    for v in vals:
+        prev = v if prev is None else v * k + prev * (1 - k)
+        out.append(prev)
+    return out
+
+
+def _sma_last(vals, n):
+    return sum(vals[-n:]) / n if len(vals) >= n else None
+
+
+def _rsi_last(closes, n):
+    """Wilder 平滑 RSI"""
+    if len(closes) < n + 1:
+        return None
+    gains = losses = 0.0
+    for i in range(1, n + 1):
+        d = closes[i] - closes[i - 1]
+        gains += max(d, 0)
+        losses += max(-d, 0)
+    avg_g, avg_l = gains / n, losses / n
+    for i in range(n + 1, len(closes)):
+        d = closes[i] - closes[i - 1]
+        avg_g = (avg_g * (n - 1) + max(d, 0)) / n
+        avg_l = (avg_l * (n - 1) + max(-d, 0)) / n
+    if avg_l == 0:
+        return 100.0
+    return 100 - 100 / (1 + avg_g / avg_l)
+
+
+def _kdj_series(highs, lows, closes, n=9):
+    k = d = 50.0
+    out = []
+    for i in range(len(closes)):
+        lo = min(lows[max(0, i - n + 1):i + 1])
+        hi = max(highs[max(0, i - n + 1):i + 1])
+        rsv = 50.0 if hi == lo else (closes[i] - lo) / (hi - lo) * 100
+        k = k * 2 / 3 + rsv / 3
+        d = d * 2 / 3 + k / 3
+        out.append((k, d, 3 * k - 2 * d))
+    return out
+
+
+def _compute_tech(candles):
+    """技术指标 + 加权评分（-100~+100，正为偏多）"""
+    closes = [c[4] for c in candles]
+    highs = [c[2] for c in candles]
+    lows = [c[3] for c in candles]
+    vols = [c[5] for c in candles]
+    c = closes[-1]
+
+    e12 = _ema_series(closes, 12)
+    e26 = _ema_series(closes, 26)
+    dif = [a - b for a, b in zip(e12, e26)]
+    dea = _ema_series(dif, 9)
+    hist = [(a - b) * 2 for a, b in zip(dif, dea)]
+
+    rsi14 = _rsi_last(closes, 14)
+    rsi6 = _rsi_last(closes, 6)
+    kdj = _kdj_series(highs, lows, closes)
+    k_, d_, j_ = kdj[-1]
+    pk, pd_, _ = kdj[-2]
+
+    ma5, ma10, ma20, ma60 = (_sma_last(closes, n) for n in (5, 10, 20, 60))
+    sd20 = (sum((x - ma20) ** 2 for x in closes[-20:]) / 20) ** 0.5
+    boll_up, boll_low = ma20 + 2 * sd20, ma20 - 2 * sd20
+    pb = (c - boll_low) / (boll_up - boll_low) if boll_up != boll_low else 0.5
+
+    avg_vol5 = sum(vols[-6:-1]) / 5 if len(vols) >= 6 else None
+    vol_ratio = vols[-1] / avg_vol5 if avg_vol5 else None
+    day_chg = (closes[-1] / closes[-2] - 1) * 100
+    mom5 = (c / closes[-6] - 1) * 100
+    mom20 = (c / closes[-21] - 1) * 100
+    support = min(lows[-20:])
+    resistance = max(highs[-20:])
+
+    signals = []
+    score = 0
+
+    def sig(key, tag, pts):
+        nonlocal score
+        signals.append({"k": key, "t": tag})
+        score += pts
+
+    # MACD：金叉/死叉 + 动能柱方向
+    sig("macd_golden", "bull", 18) if dif[-1] > dea[-1] else sig("macd_death", "bear", -18)
+    sig("macd_hist_up", "bull", 7) if hist[-1] > hist[-2] else sig("macd_hist_down", "bear", -7)
+    # 均线排列
+    if ma5 > ma20 > ma60:
+        sig("ma_bull", "bull", 18)
+    elif ma5 < ma20 < ma60:
+        sig("ma_bear", "bear", -18)
+    else:
+        sig("ma_mixed", "neut", 0)
+    sig("px_above_ma20", "bull", 6) if c > ma20 else sig("px_below_ma20", "bear", -6)
+    # RSI：极值做均值回归解读，中段做趋势解读
+    if rsi14 is not None:
+        if rsi14 > 70:
+            sig("rsi_overbought", "bear", -12)
+        elif rsi14 < 30:
+            sig("rsi_oversold", "bull", 12)
+        elif rsi14 >= 50:
+            sig("rsi_bullzone", "bull", 6)
+        else:
+            sig("rsi_bearzone", "bear", -6)
+    # KDJ：金叉/死叉优先，其次多空位置；J 值极端提示
+    if k_ > d_ and pk <= pd_:
+        sig("kdj_golden", "bull", 12)
+    elif k_ < d_ and pk >= pd_:
+        sig("kdj_death", "bear", -12)
+    elif k_ > d_:
+        sig("kdj_bull", "bull", 6)
+    else:
+        sig("kdj_bear", "bear", -6)
+    if j_ > 100:
+        sig("kdj_j_hot", "bear", -6)
+    elif j_ < 0:
+        sig("kdj_j_cold", "bull", 6)
+    # 布林带突破（超买/超卖）
+    if pb > 1:
+        sig("boll_break_up", "bear", -8)
+    elif pb < 0:
+        sig("boll_break_down", "bull", 8)
+    # 量价配合
+    if vol_ratio is not None and vol_ratio > 1.8:
+        sig("vol_surge_up", "bull", 8) if day_chg > 0 else sig("vol_surge_down", "bear", -8)
+    # 短期动量
+    if mom5 > 3:
+        sig("mom_strong", "bull", 8)
+    elif mom5 < -3:
+        sig("mom_weak", "bear", -8)
+
+    score = max(-100, min(100, score))
+    if score >= 50:
+        verdict = "strong_bull"
+    elif score >= 15:
+        verdict = "bull"
+    elif score > -15:
+        verdict = "neutral"
+    elif score > -50:
+        verdict = "bear"
+    else:
+        verdict = "strong_bear"
+
+    r = lambda v, n=2: round(v, n) if v is not None else None
+    return {
+        "score": score, "verdict": verdict, "signals": signals,
+        "ind": {
+            "dif": r(dif[-1], 3), "dea": r(dea[-1], 3), "hist": r(hist[-1], 3),
+            "rsi14": r(rsi14), "rsi6": r(rsi6),
+            "k": r(k_), "d": r(d_), "j": r(j_),
+            "bollUp": r(boll_up), "bollMid": r(ma20), "bollLow": r(boll_low), "pb": r(pb * 100, 1),
+            "ma5": r(ma5), "ma10": r(ma10), "ma20": r(ma20), "ma60": r(ma60),
+            "volRatio": r(vol_ratio), "dayChg": r(day_chg),
+            "mom5": r(mom5), "mom20": r(mom20),
+            "support": r(support), "resistance": r(resistance),
+        },
+    }
+
+
+def _analyze_options(symbol, spot):
+    """个股期权链分析：PCR、最大痛点、ATM隐波、异动大单（量/持仓比法）"""
+    url = f"https://cdn.cboe.com/api/global/delayed_quotes/options/{symbol}.json"
+    req = urllib.request.Request(url, headers={"User-Agent": YAHOO_UA})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        d = json.loads(resp.read())
+    data = d.get("data") or {}
+    spot = data.get("close") or spot
+    today = datetime.datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+
+    contracts = []
+    for o in data.get("options") or []:
+        m = OPT_RE.match(o.get("option") or "")
+        if not m:
+            continue
+        contracts.append({
+            "type": m.group(3),
+            "expiry": f"20{m.group(2)[:2]}-{m.group(2)[2:4]}-{m.group(2)[4:]}",
+            "strike": int(m.group(4)) / 1000,
+            "vol": o.get("volume") or 0,
+            "oi": o.get("open_interest") or 0,
+            "last": o.get("last_trade_price") or 0,
+            "iv": o.get("iv"),
+        })
+    if not contracts:
+        return None
+
+    call_vol = sum(x["vol"] for x in contracts if x["type"] == "C")
+    put_vol = sum(x["vol"] for x in contracts if x["type"] == "P")
+    call_oi = sum(x["oi"] for x in contracts if x["type"] == "C")
+    put_oi = sum(x["oi"] for x in contracts if x["type"] == "P")
+    pcr_vol = put_vol / call_vol if call_vol else None
+    pcr_oi = put_oi / call_oi if call_oi else None
+
+    # 最近的有效到期日（未过期且总持仓≥1000）→ 最大痛点 + ATM隐波
+    max_pain = atm_iv = near_expiry = None
+    expiries = sorted({x["expiry"] for x in contracts if x["expiry"] >= today})
+    for exp in expiries:
+        grp = [x for x in contracts if x["expiry"] == exp]
+        if sum(x["oi"] for x in grp) >= 1000:
+            near_expiry = exp
+            strikes = sorted({x["strike"] for x in grp})
+            best, best_pay = None, None
+            for s in strikes:
+                pay = sum(x["oi"] * max(0.0, s - x["strike"]) for x in grp if x["type"] == "C") + \
+                      sum(x["oi"] * max(0.0, x["strike"] - s) for x in grp if x["type"] == "P")
+                if best_pay is None or pay < best_pay:
+                    best, best_pay = s, pay
+            max_pain = best
+            if spot:
+                atm = min(strikes, key=lambda s: abs(s - spot))
+                ivs = [x["iv"] for x in grp if x["strike"] == atm and x["iv"]]
+                atm_iv = round(sum(ivs) / len(ivs) * 100, 1) if ivs else None
+            break
+
+    # 异动大单：量≥200 且 权利金≥$20万 且 量≥持仓1.5倍（疑似新开仓）
+    unusual = []
+    for x in contracts:
+        prem = x["vol"] * x["last"] * 100
+        if x["vol"] >= 200 and prem >= 200_000 and x["vol"] >= 1.5 * max(x["oi"], 1):
+            unusual.append({
+                "type": x["type"], "strike": x["strike"], "expiry": x["expiry"],
+                "vol": int(x["vol"]), "oi": int(x["oi"]),
+                "volOi": round(x["vol"] / max(x["oi"], 1), 1),
+                "last": x["last"], "premium": int(prem),
+                "iv": round(x["iv"] * 100, 1) if x["iv"] else None,
+            })
+    unusual.sort(key=lambda x: -x["premium"])
+    unusual = unusual[:6]
+
+    if pcr_vol is not None and pcr_vol < 0.7:
+        sentiment = "bullish"
+    elif pcr_vol is not None and pcr_vol > 1.3:
+        sentiment = "bearish"
+    else:
+        sentiment = "balanced"
+
+    return {
+        "pcrVol": round(pcr_vol, 2) if pcr_vol is not None else None,
+        "pcrOi": round(pcr_oi, 2) if pcr_oi is not None else None,
+        "expiry": near_expiry, "maxPain": max_pain, "atmIv": atm_iv,
+        "sentiment": sentiment, "unusual": unusual,
+    }
+
+
+def _fetch_short_interest(symbol):
+    """Yahoo quoteSummary 做空数据（失败返回 None）"""
+    auth = _yahoo_get_auth()
+    url = (f"https://query1.finance.yahoo.com/v10/finance/quoteSummary/{symbol}"
+           f"?modules=defaultKeyStatistics&crumb={urlquote(auth['crumb'])}")
+    req = urllib.request.Request(url, headers={"User-Agent": YAHOO_UA, "Cookie": auth["cookie"]})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        d = json.loads(resp.read())
+    ks = d["quoteSummary"]["result"][0]["defaultKeyStatistics"]
+    g = lambda k: (ks.get(k) or {}).get("raw")
+    ratio, shares, pct = g("shortRatio"), g("sharesShort"), g("shortPercentOfFloat")
+    if ratio is None and shares is None:
+        return None
+    return {
+        "ratio": ratio,
+        "shares": shares,
+        "pctFloat": round(pct * 100, 2) if pct is not None else None,
+    }
+
+
+# ---------- 散户社媒热度（ApeWisdom 聚合 Reddit 提及量，共享 top-100 列表缓存30分钟） ----------
+_social_cache = {"time": 0.0, "map": {}, "list": []}
+_social_lock = threading.Lock()
+
+
+def _refresh_social():
+    now = time.time()
+    with _social_lock:
+        if now - _social_cache["time"] < 1800 and _social_cache["map"]:
+            return _social_cache["map"]
+    try:
+        req = urllib.request.Request(
+            "https://apewisdom.io/api/v1.0/filter/all-stocks/page/1",
+            headers={"User-Agent": YAHOO_UA})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            d = json.loads(resp.read())
+        m, lst = {}, []
+        for r in d.get("results", []):
+            entry = {
+                "ticker": r.get("ticker"),
+                "name": html.unescape(r.get("name") or ""),
+                "mentions": r.get("mentions"),
+                "mentions24h": r.get("mentions_24h_ago"),
+                "rank": r.get("rank"),
+                "upvotes": r.get("upvotes"),
+            }
+            m[r.get("ticker")] = entry
+            lst.append(entry)
+        with _social_lock:
+            _social_cache["time"] = now
+            _social_cache["map"] = m
+            _social_cache["list"] = lst
+        return m
+    except Exception:
+        return _social_cache["map"]
+
+
+def social_top(n=5):
+    _refresh_social()
+    with _social_lock:
+        lst = list(_social_cache.get("list") or [])
+        ts = _social_cache["time"]
+    lst.sort(key=lambda x: x.get("rank") or 9999)
+    out = []
+    for e in lst[:n]:
+        chg = None
+        if e.get("mentions24h"):
+            chg = round((e["mentions"] / e["mentions24h"] - 1) * 100)
+        out.append({"ticker": e["ticker"], "name": e.get("name"),
+                    "mentions": e["mentions"], "chg": chg, "rank": e["rank"]})
+    return {"top": out, "time": ts}
+
+
+def _get_social(sym):
+    m = _refresh_social()
+    d = m.get(sym.replace("-", "."))  # BRK-B -> BRK.B（ApeWisdom 用点）
+    if not d:
+        d = m.get(sym)
+    if not d or d.get("mentions") is None:
+        return {"inTop": False, "mentions": 0, "rank": None}
+    chg = None
+    prev = d.get("mentions24h")
+    if prev:
+        chg = round((d["mentions"] / prev - 1) * 100, 1)
+    return {"inTop": True, "mentions": d["mentions"], "mentions24h": prev,
+            "chg": chg, "rank": d["rank"], "upvotes": d.get("upvotes")}
+
+
+def _fetch_news(symbol, hours=48):
+    """Yahoo Finance 个股新闻，仅保留近 hours 小时（含 unix 时间戳与来源）"""
+    url = ("https://query1.finance.yahoo.com/v1/finance/search?q=" + urlquote(symbol) +
+           "&newsCount=20&quotesCount=0&enableFuzzyQuery=false")
+    req = urllib.request.Request(url, headers={"User-Agent": YAHOO_UA})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        d = json.loads(resp.read())
+    cutoff = time.time() - hours * 3600
+    out = []
+    for n in d.get("news", []):
+        ts = n.get("providerPublishTime")
+        title = n.get("title")
+        if not ts or not title or ts < cutoff:
+            continue
+        out.append({
+            "title": title,
+            "publisher": n.get("publisher"),
+            "link": n.get("link"),
+            "ts": ts,
+        })
+    out.sort(key=lambda x: -x["ts"])
+    return out[:8]
+
+
+def compute_analysis(code):
+    kl = fetch_kline_cached(code, "d")
+    candles = kl.get("candles") or []
+    if len(candles) < 70:
+        raise ValueError("insufficient history")
+    result = _compute_tech(candles)
+    result["code"] = code
+    result["time"] = time.time()
+    sym = code[2:].replace(".", "-")
+    try:
+        result["options"] = _analyze_options(sym, candles[-1][4])
+    except Exception:
+        result["options"] = None
+    try:
+        result["shortInt"] = _fetch_short_interest(sym)
+    except Exception:
+        result["shortInt"] = None
+    try:
+        result["social"] = _get_social(sym)
+    except Exception:
+        result["social"] = None
+    try:
+        result["news"] = _fetch_news(sym)
+    except Exception:
+        result["news"] = None
+    return result
+
+
+def compute_analysis_cached(code):
+    now = time.time()
+    with _ana_lock:
+        hit = _ana_cache.get(code)
+        if hit and now - hit[0] < 300:
+            return hit[1]
+    data = compute_analysis(code)
+    with _ana_lock:
+        if len(_ana_cache) > 200:
+            _ana_cache.clear()
+        _ana_cache[code] = (now, data)
+    return data
+
 
 # ---------- 期权异动扫描（CBOE 免费延迟期权链，15分钟延迟） ----------
 # 筛选逻辑：成交量明显超过持仓（疑似新开仓）且权利金规模大的合约
@@ -278,8 +822,8 @@ def _options_scanner():
 DB_PATH = Path(__file__).parent / "data.db"
 SESSION_TTL = 30 * 24 * 3600  # 会话有效期 30 天
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,20}$")
-CODE_RE = re.compile(r"^(sh|sz|bj|hk|us)[A-Za-z0-9.]{1,12}$")
-VALID_MARKETS = ("us", "hk", "a")
+CODE_RE = re.compile(r"^(sh|sz|bj|hk|us|kr)[A-Za-z0-9.]{1,12}$")
+VALID_MARKETS = ("us", "hk", "a", "kr")
 
 
 def db():
@@ -323,7 +867,7 @@ def normalize_code(raw: str) -> str:
     """把用户输入转成腾讯接口的代码格式，如 600519 -> sh600519、AAPL -> usAAPL"""
     c = raw.strip()
     cl = c.lower()
-    if re.fullmatch(r"(sh|sz|bj|hk)\d+", cl):
+    if re.fullmatch(r"(sh|sz|bj|hk|kr)\d+", cl):
         return cl
     # 美股接口区分大小写，ticker 必须大写；"usAAPL" 这种带前缀的写法按前缀处理
     if re.fullmatch(r"us[A-Z.]+", c):
@@ -363,7 +907,7 @@ def parse_quote(code: str, raw: str):
     return {
         "code": code,
         "name": f[1],
-        "currency": {"hk": "HKD", "us": "USD"}.get(market, "CNY"),
+        "currency": {"hk": "HKD", "us": "USD", "kr": "KRW"}.get(market, "CNY"),
         "price": num(3),
         "prevClose": num(4),
         "open": num(5),
@@ -432,8 +976,39 @@ class Handler(BaseHTTPRequestHandler):
                 "scanned": _opt_cache["scanned"],
                 "items": _opt_cache["items"],
             })
+        elif parsed.path == "/api/kline":
+            self.handle_kline(parsed)
+        elif parsed.path == "/api/indices":
+            market = parse_qs(parsed.query).get("market", [""])[0]
+            self.send_json({"indices": fetch_indices(market)})
+        elif parsed.path == "/api/social-top":
+            try:
+                self.send_json(social_top(5))
+            except Exception:
+                self.send_json({"top": [], "time": 0})
+        elif parsed.path == "/api/analysis":
+            code = parse_qs(parsed.query).get("code", [""])[0]
+            if not code.startswith("us") or not CODE_RE.fullmatch(code):
+                self.send_json({"error": "bad_request"}, status=400)
+                return
+            try:
+                self.send_json(compute_analysis_cached(code))
+            except Exception:
+                self.send_json({"error": "analysis_unavailable"}, status=502)
         else:
             self.serve_static(parsed.path)
+
+    def handle_kline(self, parsed):
+        params = parse_qs(parsed.query)
+        code = params.get("code", [""])[0]
+        period = params.get("period", ["d"])[0]
+        if not code.startswith("us") or not CODE_RE.fullmatch(code) or period not in KLINE_CFG:
+            self.send_json({"error": "bad_request"}, status=400)
+            return
+        try:
+            self.send_json(fetch_kline_cached(code, period))
+        except Exception:
+            self.send_json({"error": "kline_unavailable"}, status=502)
 
     def do_POST(self):
         parsed = urlparse(self.path)
@@ -596,6 +1171,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", CONTENT_TYPES.get(file.suffix, "application/octet-stream"))
         self.send_header("Content-Length", str(len(body)))
+        # 每次校验新鲜度，避免浏览器用启发式缓存拿旧 JS/CSS（用户无需强刷）
+        self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(body)
 

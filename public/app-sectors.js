@@ -10,7 +10,7 @@ const LANGS = [
 const I18N = {
   en: {
     docTitle: 'US Sectors · StockView',
-    navUS: 'US', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow', back: '← Back to markets',
+    navUS: 'US', navKR: 'KR', navHK: 'HK', navA: 'CN-A', navOpt: 'Options Flow', back: '← Back to markets',
     updated: 'Updated', failed: 'Refresh failed, retrying',
     marketLabel: 'US', et: 'ET',
     sess_pre: 'Pre-Market', sess_regular: 'Regular', sess_after: 'After-Hours',
@@ -25,7 +25,7 @@ const I18N = {
   },
   zh: {
     docTitle: '美股板块 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期权异动', back: '← 返回行情',
+    navUS: '美股', navKR: '韩股', navHK: '港股', navA: 'A股', navOpt: '期权异动', back: '← 返回行情',
     updated: '已更新', failed: '刷新失败，将自动重试',
     marketLabel: '美股', et: '美东',
     sess_pre: '盘前', sess_regular: '盘中', sess_after: '盘后',
@@ -40,7 +40,7 @@ const I18N = {
   },
   tw: {
     docTitle: '美股板塊 · StockView',
-    navUS: '美股', navHK: '港股', navA: 'A股', navOpt: '期權異動', back: '← 返回行情',
+    navUS: '美股', navKR: '韓股', navHK: '港股', navA: 'A股', navOpt: '期權異動', back: '← 返回行情',
     updated: '已更新', failed: '刷新失敗，將自動重試',
     marketLabel: '美股', et: '美東',
     sess_pre: '盤前', sess_regular: '盤中', sess_after: '盤後',
@@ -55,7 +55,7 @@ const I18N = {
   },
   ja: {
     docTitle: '米国株セクター · StockView',
-    navUS: '米国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー', back: '← 戻る',
+    navUS: '米国株', navKR: '韓国株', navHK: '香港株', navA: '中国A株', navOpt: 'オプションフロー', back: '← 戻る',
     updated: '更新', failed: '更新に失敗しました。再試行します',
     marketLabel: '米国市場', et: 'ET',
     sess_pre: 'プレマーケット', sess_regular: '取引時間中', sess_after: 'アフターマーケット',
@@ -70,7 +70,7 @@ const I18N = {
   },
   ko: {
     docTitle: '미국 섹터 · StockView',
-    navUS: '미국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우', back: '← 돌아가기',
+    navUS: '미국', navKR: '한국', navHK: '홍콩', navA: '중국A', navOpt: '옵션 플로우', back: '← 돌아가기',
     updated: '업데이트', failed: '새로고침 실패, 재시도 중',
     marketLabel: '미국 증시', et: 'ET',
     sess_pre: '프리마켓', sess_regular: '정규장', sess_after: '애프터마켓',
@@ -189,6 +189,7 @@ function renderStatics() {
   document.documentElement.lang = { en: 'en', zh: 'zh-CN', tw: 'zh-TW', ja: 'ja', ko: 'ko' }[lang];
   document.title = t('docTitle');
   $('navUS').textContent = t('navUS');
+  $('navKR').textContent = t('navKR');
   $('navHK').textContent = t('navHK');
   $('navA').textContent = t('navA');
   $('backBtn').textContent = t('back');
